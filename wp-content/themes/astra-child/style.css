@@ -1,3 +1,4 @@
+@charset "UTF-8";
 /**
 Theme Name: astra-child
 Author: Brainstorm Force
@@ -15,27 +16,129 @@ header {
   box-shadow: 0px 5px 40px rgba(0, 0, 0, 0.05);
 }
 
+/*共用*/
+/* line 28, style.scss */
+.list ul li {
+  width: 50%;
+}
+@media (max-width: 480px) {
+  /* line 28, style.scss */
+  .list ul li {
+    width: 100%;
+  }
+}
+
+/* line 36, style.scss */
+.wpforms-submit {
+  background-color: #f3981c;
+  border: 0px;
+  font-size: 16px;
+  border-radius: 3px;
+}
+/* line 41, style.scss */
+.wpforms-submit:hover {
+  background-color: #D1512D;
+  color: #fff;
+}
+
 /*home*/
-/* line 27, style.scss */
+/* line 49, style.scss */
 .business-plan-img img {
   border-radius: 3px;
   box-shadow: 10px 20px 40px rgba(0, 0, 0, 0.15);
 }
+@media (min-width: 450px) and (max-width: 768px) {
+  /* line 54, style.scss */
+  .business-plan-img .elementor-image-box-wrapper {
+    display: flex;
+    align-items: center;
+  }
+  /* line 57, style.scss */
+  .business-plan-img .elementor-image-box-wrapper .elementor-image-box-img {
+    margin-right: 40px !important;
+  }
+}
+@media (max-width: 449px) {
+  /* line 63, style.scss */
+  .business-plan-img .elementor-image-box-title {
+    margin-top: 20px;
+  }
+}
+
+/*服務項目（產品）*/
+/* line 70, style.scss */
+.services-catalog {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  background-color: #fefefe;
+  box-shadow: 0 64px 128px -32px rgba(0, 0, 0, 0.24);
+}
+/* line 78, style.scss */
+.services-catalog .item {
+  width: calc(100% / 3);
+  padding: 40px;
+  transition: 0.4s;
+}
+/* line 82, style.scss */
+.services-catalog .item:not(:nth-of-type(3n)) {
+  border-right: 1px solid #EFEFEF;
+}
+/* line 85, style.scss */
+.services-catalog .item:not(.last) {
+  border-bottom: 1px solid #EFEFEF;
+}
+/* line 88, style.scss */
+.services-catalog .item .num {
+  font-size: 14px;
+  color: #303030;
+}
+/* line 92, style.scss */
+.services-catalog .item .title {
+  font-size: 24px;
+  color: #303030;
+  letter-spacing: 4px;
+  margin-top: 10px;
+}
+/* line 98, style.scss */
+.services-catalog .item .sub-title {
+  font-size: 16px;
+  color: #303030;
+}
+/* line 102, style.scss */
+.services-catalog .item .btn {
+  font-size: 16px;
+  color: #D1512D;
+  text-decoration: none;
+  margin-top: 30px;
+  display: inline-block;
+}
+/* line 108, style.scss */
+.services-catalog .item .btn:hover {
+  color: #f3981c;
+}
+/* line 112, style.scss */
+.services-catalog .item:hover {
+  background-color: #EFEFEF;
+  transition: 0.4s;
+}
 
 /*footer*/
-/* line 35, style.scss */
+/* line 121, style.scss */
 .footer-menu-list ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 @media (max-width: 768px) {
-  /* line 35, style.scss */
+  /* line 121, style.scss */
   .footer-menu-list ul {
     text-align: center;
   }
 }
-/* line 43, style.scss */
+/* line 129, style.scss */
 .footer-menu-list ul li a {
   color: #DCDCDC;
   font-size: 16px;
