@@ -66,7 +66,75 @@ header {
     }
 }
 
-/*服務項目（產品）*/
+/*home-服務項目（產品）-列表*/
+.index-services-list {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 0 -15px;
+    .item {
+        display: flex;
+        flex-direction: row;
+        width: calc(100% / 3 - 30px);
+        margin: 15px 15px 50px 15px;
+        @media (max-width: 768px) {
+            width: calc(100% / 2 - 30px);
+        }
+        @media (max-width: 480px) {
+            width: calc(100% - 30px);
+        }
+        * {
+            color: #303030;
+        }
+        .item-warp {
+            text-decoration: none;
+        }
+        .img {
+            padding: 25% 0;
+            height: 0;
+            background-position: center center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            border-radius: 4px;
+            box-shadow: 10px 20px 40px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+            @media (max-width: 767px) {
+                width: 100%;
+            }
+        }
+        .cont {
+            .title {
+                font-size: 24px;
+                letter-spacing: 4px;
+                margin-top: 30px;
+                @media (max-width: 767px) {
+                    letter-spacing: 1px;
+                }
+            }
+            .desc {
+                font-size: 16px;
+            }
+        }
+        &.publish {
+            .item-warp:hover {
+                .img {
+                    opacity: 0.5;
+                }
+            }
+        }
+        &.draft {
+            .item-warp {
+                cursor: context-menu;
+            }
+        }
+    }
+}
+
+
+/*服務項目（產品）-目錄*/
 .services-catalog {
     padding: 0;
     margin: 0;
@@ -79,11 +147,29 @@ header {
         width: calc(100% / 3);
         padding: 40px;
         transition: 0.4s;
-        &:not(:nth-of-type(3n)) {
-            border-right: 1px solid #EFEFEF;
+        @media (min-width: 768px) {
+            &:not(:nth-of-type(3n)) {
+                border-right: 1px solid #EFEFEF;
+            }
+            &:not(.last) {
+                border-bottom: 1px solid #EFEFEF;
+            }
         }
-        &:not(.last) {
+        @media (max-width: 767px) {
+            width: 50%;
+            &:not(:nth-of-type(2n)) {
+                border-right: 1px solid #EFEFEF;
+            }
             border-bottom: 1px solid #EFEFEF;
+        }
+        @media (max-width: 460px) {
+            width: 100%;
+            &:not(:nth-of-type(2n)) {
+                border-right: 0px solid #EFEFEF;
+            }
+            &:last-of-type {
+                border-bottom: 0px solid #EFEFEF;
+            }
         }
         .num {
             font-size: 14px;
@@ -94,6 +180,10 @@ header {
             color: $b2;
             letter-spacing: 4px;
             margin-top: 10px;
+            @media (max-width: 767px) {
+                font-size: 20px;
+                letter-spacing: 1px;
+            }
         }
         .sub-title {
             font-size: 16px;
@@ -113,6 +203,284 @@ header {
             background-color: #EFEFEF;
             transition: 0.4s;
         }
+    }
+}
+
+/*服務項目（產品）-列表*/
+.services-list {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    .item {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        margin-bottom: 117px;
+        &:nth-last-of-type(even) {
+            flex-direction: row-reverse;
+        }
+        @media (max-width: 767px) {
+            flex-direction: column;
+            margin-bottom: 50px;
+            &:nth-last-of-type(even) {
+                flex-direction: column;
+            }
+        }
+        .img {
+            width: 50%;
+            padding: 25% 0;
+            height: 0;
+            background-position: center center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            border-radius: 4px;
+            box-shadow: 10px 20px 40px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+            @media (max-width: 767px) {
+                width: 100%;
+            }
+        }
+        .cont {
+            padding: 8%;
+            @media (max-width: 767px) {
+                padding: 50px 0;
+            }
+            .title {
+                font-size: 24px;
+                letter-spacing: 4px;
+            }
+            .desc {
+                font-size: 16px;
+            }
+            .btn {
+                font-size: 16px;
+                color: #fff;
+                background-color: $primary;
+                text-decoration: none;
+                margin-top: 30px;
+                display: inline-block;
+                border-radius: 3px;
+                padding: 8px 30px;
+                font-weight: bold;
+                letter-spacing: 2px;
+                &:hover {
+                    background-color: $sec;
+                }
+            }
+        }
+        &.draft {
+            .btn {
+                background-color: #838383;
+                &:hover {
+                    background-color: #838383;
+                }
+            }
+        }
+    }
+}
+
+/*服務項目（產品）-單頁*/
+.single-product {
+    .ast-container {
+        flex-direction: column;
+        .service-single-banner {
+            position: relative;
+            background-position: center center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            min-height: 700px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 5%;
+            &::before {
+                content: '';
+                opacity: 0.8;
+                background-color: #1A1A1A;
+                position: absolute;
+                display: block;
+                width: 100%;
+                height: 100%;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                right: 0;
+            }
+            * {
+                position: relative;
+                z-index: 1;
+                color: $w1;
+            }
+            .service-single-banner-warp {
+                text-align: center;
+                width: 600px;
+                max-width: 100%;
+                .title {
+                    font-size: 40px;
+                    font-weight: bold;
+                    line-height: 1.3;
+                }
+                .desc {
+                    font-size: 18px;
+                    line-height: 2;
+                }
+                .icon-warp {
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: center;
+                    .icon {
+                        padding: 5% 8% 2%;
+                        p {
+                            font-size: 18px;
+                            font-weight: bold;
+                            margin-top: 10px;
+                        }
+                    }
+                }
+            }
+        }
+        .service-content {
+
+        }
+    }
+}
+
+/*部落格blog-產業分析*/
+.blog, .search {
+    background-color: #fff;
+    .ast-archive-description {
+        background-color: transparent;
+        padding: 0 0 30px !important;
+        // margin-bottom: 40px;
+        // border-bottom: 1px solid #DBDBDB;
+        @media (max-width: 921px) {
+            padding: 30px 0 0 !important;
+        }
+        .page-title {
+            font-size: 32px;
+            font-weight: bold;
+        }
+    }
+    .site-main {
+        border-right: 1px solid #DBDBDB;
+        @media (max-width: 921px) {
+            border-right: 1px solid transparent;
+            margin-top: 20px;
+        }
+        .post {
+            padding: 0 60px 0 0;
+            border-bottom: 1px solid transparent;
+            @media (max-width: 921px) {
+                padding: 0;
+            }
+            .ast-post-format- {
+                border-bottom: 1px solid #DBDBDB;
+                margin-bottom: 60px;
+                padding-bottom: 60px;
+                .post-content {
+                    .entry-header {
+                        box-shadow: 0px 0px 0px transparent;
+                        .entry-title a {
+                            font-weight: bold;
+                        }
+                        .entry-meta * {
+                            font-weight: bold;
+                        }
+                    }
+                    > .ast-blog-featured-section {
+                        width: 100%;
+                        height: 0;
+                        padding: 25% 0;
+                        border-radius: 5px;
+                        overflow: hidden;
+                        position: relative;
+                        .post-thumb-img-content {
+                            position: absolute;
+                            left: 50%;
+                            top: 50%;
+                            transform: translate(-50%, -50%);
+                            width: 100%;
+                            height: auto;
+                        }
+                    }
+                    .read-more {
+                        a {
+                            background-color: transparent;
+                            color: $primary;
+                            font-size: 16px;
+                            border-width: 0px;
+                            padding: 0;
+                            &:hover {
+                                color: $sec;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // sidebar
+    #secondary {
+        @media (max-width: 921px) {
+            padding: 0 !important;
+            margin-bottom: 50px;
+        }
+        .sidebar-main {
+            .widget_search {
+                .wp-block-search__inside-wrapper  {
+                    border-color: #DBDBDB;
+                    background: transparent;
+                    .wp-block-search__input  {
+                        background: transparent;
+                    }
+                }
+                .wp-block-search__button {
+                    background: transparent;
+                    color: #434343;
+                    font-size: 20px;
+                    border-width: 0px;
+                    padding: 10px;
+                    svg {
+                        transform: scaleX(-1);
+                    }
+                }
+            }
+            .widget_block {
+                .wp-block-group {
+                    padding-top: 0;
+                    padding-bottom: 0;
+                    @media (max-width: 1200px) {
+                        padding: 0;
+                    }
+                    .wp-block-group__inner-container {
+                        h2 {
+                            font-size: 20px;
+                            font-weight: bold;
+                            margin-bottom: 20px;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/*部落格blog單頁-產業分析*/
+.single {
+    background-color: #EFEFEF;
+    header {
+        box-shadow: 0px 0px 0 transparent;
+    }
+    .entry-title {
+        font-size: 32px;
+        font-weight: bold;
+    }
+    .entry-meta * {
+        font-size: 18px;
+        font-weight: bold;
     }
 }
 
