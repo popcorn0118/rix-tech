@@ -548,34 +548,87 @@ header {
   background-color: #EFEFEF;
 }
 /* line 474, style.scss */
+.single #primary {
+  margin: 4em 0 0;
+}
+/* line 477, style.scss */
 .single header {
   box-shadow: 0px 0px 0 transparent;
 }
-/* line 477, style.scss */
+/* line 480, style.scss */
 .single .entry-title {
   font-size: 32px;
   font-weight: bold;
 }
-/* line 481, style.scss */
+/* line 484, style.scss */
 .single .entry-meta * {
   font-size: 18px;
   font-weight: bold;
 }
+/* line 488, style.scss */
+.single .ast-single-related-posts-container {
+  margin-bottom: 0;
+  position: relative;
+}
+@media (min-width: 1250px) {
+  /* line 488, style.scss */
+  .single .ast-single-related-posts-container {
+    padding: 5.34em 0;
+  }
+}
+/* line 494, style.scss */
+.single .ast-single-related-posts-container::after, .single .ast-single-related-posts-container::before {
+  content: '';
+  position: absolute;
+  display: block;
+  height: 100%;
+  width: calc((100vw - 1200px) / 2);
+  top: 0;
+  background-color: #fff;
+}
+/* line 503, style.scss */
+.single .ast-single-related-posts-container::before {
+  left: 0;
+  transform: translateX(-100%);
+}
+/* line 507, style.scss */
+.single .ast-single-related-posts-container::after {
+  right: 0;
+  transform: translateX(100%);
+}
+/* line 511, style.scss */
+.single .ast-single-related-posts-container .ast-related-posts-title {
+  margin: 0 0 50px 0;
+}
+/* line 515, style.scss */
+.single .ast-single-related-posts-container .ast-related-post .entry-title a {
+  font-size: 22px;
+  font-weight: bold;
+  color: #303030;
+}
+/* line 520, style.scss */
+.single .ast-single-related-posts-container .ast-related-post .entry-meta * {
+  font-size: 16px;
+}
+/* line 523, style.scss */
+.single .ast-single-related-posts-container .ast-related-post .read-more {
+  display: none;
+}
 
 /*footer*/
-/* line 489, style.scss */
+/* line 532, style.scss */
 .footer-menu-list ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 @media (max-width: 768px) {
-  /* line 489, style.scss */
+  /* line 532, style.scss */
   .footer-menu-list ul {
     text-align: center;
   }
 }
-/* line 497, style.scss */
+/* line 540, style.scss */
 .footer-menu-list ul li a {
   color: #DCDCDC;
   font-size: 16px;

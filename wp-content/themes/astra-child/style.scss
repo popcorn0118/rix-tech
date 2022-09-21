@@ -469,8 +469,11 @@ header {
 }
 
 /*部落格blog單頁-產業分析*/
-.single {
+.single {   
     background-color: #EFEFEF;
+    #primary {
+        margin: 4em 0 0;
+    }
     header {
         box-shadow: 0px 0px 0 transparent;
     }
@@ -481,6 +484,46 @@ header {
     .entry-meta * {
         font-size: 18px;
         font-weight: bold;
+    }
+    .ast-single-related-posts-container {
+        margin-bottom: 0;
+        position: relative;
+        @media (min-width: 1250px) {
+            padding: 5.34em 0;
+        }
+        &::after, &::before {
+            content: '';
+            position: absolute;
+            display: block;
+            height: 100%;
+            width: calc((100vw - 1200px) / 2);
+            top: 0;
+            background-color: #fff;
+        }
+        &::before {
+            left: 0;
+            transform: translateX(-100%);
+        }
+         &::after {
+            right: 0;
+            transform: translateX(100%);
+        }
+        .ast-related-posts-title {
+            margin: 0 0 50px 0;
+        }
+        .ast-related-post {
+            .entry-title a {
+                font-size: 22px;
+                font-weight: bold;
+                color: $b1;
+            }
+            .entry-meta * {
+                font-size: 16px;
+            }
+            .read-more {
+                display: none;
+            }
+        }
     }
 }
 
