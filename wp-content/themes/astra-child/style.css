@@ -614,21 +614,69 @@ header {
 .single .ast-single-related-posts-container .ast-related-post .read-more {
   display: none;
 }
+/* line 528, style.scss */
+.single .go-industry-analysis {
+  text-align: center;
+  margin: 50px 0 -70px 0;
+  font-size: 18px;
+  display: inline-block;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+/* line 536, style.scss */
+.single .go-industry-analysis > a {
+  position: absolute;
+  display: block;
+  width: max-content;
+  top: -23px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+@media (max-width: 768px) {
+  /* line 528, style.scss */
+  .single .go-industry-analysis {
+    margin: 50px 0 0 0;
+  }
+}
+/* line 549, style.scss */
+.single .navigation * {
+  font-size: 18px;
+}
+
+/* line 555, style.scss */
+.icon-line-float {
+  background-color: #39AF68;
+  padding: 10px 13px;
+  line-height: 2;
+  width: 54px;
+  height: 54px;
+  border-radius: 50px;
+  position: fixed;
+  z-index: 99;
+  right: 30px;
+  bottom: 100px;
+  box-shadow: 2px 2px 6px rgba(26, 26, 26, 0.15);
+}
+/* line 567, style.scss */
+.icon-line-float:hover {
+  opacity: 0.8;
+}
 
 /*footer*/
-/* line 532, style.scss */
+/* line 574, style.scss */
 .footer-menu-list ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 @media (max-width: 768px) {
-  /* line 532, style.scss */
+  /* line 574, style.scss */
   .footer-menu-list ul {
     text-align: center;
   }
 }
-/* line 540, style.scss */
+/* line 582, style.scss */
 .footer-menu-list ul li a {
   color: #DCDCDC;
   font-size: 16px;
