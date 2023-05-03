@@ -25,21 +25,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <?php wp_head(); ?>
 <?php astra_head_bottom(); ?>
-
-<?php 
-		$arr = array("rix-tech.com.tw", "www.rix-tech.com.tw");
-		if (in_array($_SERVER['HTTP_HOST'], $arr)) { 
-	?>
-	<!-- Google tag (gtag.js) -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id=G-H1HY4ZRNET"></script>
-	<script>
-		window.dataLayer = window.dataLayer || [];
-		function gtag(){dataLayer.push(arguments);}
-		gtag('js', new Date());
-		gtag('config', 'G-H1HY4ZRNET');
-	</script>
-<?php } ?>
-
 </head>
 
 <body <?php astra_schema_body(); ?> <?php body_class(); ?>>
