@@ -28,8 +28,28 @@
             }, 3000);
         });
     }
-    jQuery(document).ready(function ()
+
+    //
+    jQuery('#wpvivid_tab_debug').click(function()
     {
         wpvivid_get_ini_memory_limit();
+    });
+
+    jQuery(document).ready(function ()
+    {
+        jQuery(document).on('wpvivid-switch-tabs', function(event,contentName)
+        {
+            if(contentName=='debug-page')
+            {
+                wpvivid_get_ini_memory_limit();
+            }
+
+            if(contentName=='settings-page')
+            {
+                wpvivid_calculate_diskspaceused();
+            }
+        });
+
+        //wpvivid_get_ini_memory_limit();
     });
 </script>

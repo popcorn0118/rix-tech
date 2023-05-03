@@ -13,6 +13,7 @@ return array(
     'Guzzle' => array($vendorDir . '/guzzle/guzzle/src'),
     'Google_Service_' => array($vendorDir . '/google/apiclient-services/src'),
     'Google_' => array($baseDir . '/includes/lib/google-api-php-client/src'),
+    'WPvivid_Google_' => array($baseDir . '/includes/lib2/google-api-php-client/src'),
     'File' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
     'Crypt' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
     'Aws' => array($baseDir . '/includes/lib/aws-sdk-php-2.8.31/src'),

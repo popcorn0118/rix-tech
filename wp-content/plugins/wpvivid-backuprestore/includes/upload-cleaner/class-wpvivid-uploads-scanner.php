@@ -909,8 +909,63 @@ class WPvivid_Uploads_Scanner
                 }
 
             }
+
+            if(isset($custom_fields['picture']))
+            {
+                if ( is_string( $custom_fields['picture'] ) && ! empty( $custom_fields['picture'] ) )
+                {
+                    $id=$custom_fields['picture'];
+                    $files=array_merge($files,$this->get_img_from_id($id));
+                }
+                else if(is_array( $custom_fields['picture'] )&& ! empty( $custom_fields['picture'] ))
+                {
+                    foreach ($custom_fields['picture'] as $id)
+                    {
+                        $files=array_merge($files,$this->get_img_from_id($id));
+                    }
+                }
+            }
         }
 
+        return $files;
+    }
+
+    public function get_media_from_wpresidence( $post )
+    {
+        $files=array();
+
+        $image_to_attach = get_post_meta( $post, 'image_to_attach',true);
+        $image_to_attach_array = explode(",", $image_to_attach);
+        if(!empty($image_to_attach_array))
+        {
+            foreach ($image_to_attach_array as $image_post_id)
+            {
+                if(!empty($image_post_id))
+                {
+                    $_wp_attachment_metadata = get_post_meta( $image_post_id, '_wp_attachment_metadata',true);
+                    if(isset($_wp_attachment_metadata['file']))
+                    {
+                        $files[] = $_wp_attachment_metadata['file'];
+                        $iPos = strripos($_wp_attachment_metadata['file'], '/');
+                        $relative_path = substr($_wp_attachment_metadata['file'], 0, $iPos+1);
+                        if(isset($_wp_attachment_metadata['original_image']))
+                        {
+                            $files[] = $relative_path.$_wp_attachment_metadata['original_image'];
+                        }
+                        if(isset($_wp_attachment_metadata['sizes']))
+                        {
+                            foreach ($_wp_attachment_metadata['sizes'] as $type)
+                            {
+                                if(isset($type['file']))
+                                {
+                                    $files[] = $relative_path.$type['file'];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return $files;
     }
 
@@ -1150,13 +1205,19 @@ class WPvivid_Uploads_Scanner
 
         if(strlen($url)>4&&strtolower( substr( $url, 0, 4) ) == 'http')
         {
-            $ipos = strpos( $url, $this->upload_url );
+            $tmp_url = str_replace('https://', '', $url);
+            $tmp_url = str_replace('http://', '', $tmp_url);
+
+            $tmp_upload_url = str_replace('https://', '', $this->upload_url);
+            $tmp_upload_url = str_replace('http://', '', $tmp_upload_url);
+
+            $ipos = strpos( $tmp_url, $tmp_upload_url );
             if ($ipos === false)
             {
                 return false;
             }
 
-            $str=substr( $url, 1 + strlen( $this->upload_url ) + $ipos );
+            $str=substr( $tmp_url, 1 + strlen( $tmp_upload_url ) + $ipos );
 
             return $str;
         }
@@ -1299,7 +1360,8 @@ class WPvivid_Uploads_Scanner
                 {
                     if (is_dir($root_path . DIRECTORY_SEPARATOR . $filename))
                     {
-                        if(preg_match('#^\d{4}$#',$filename))
+                        if(preg_match('#^\d{4}$#',$filename) ||
+                            preg_match('/listing-uploads/', $filename))  //add listing-uploads\gallery
                         {
                             $result['folders']=array_merge( $result['folders'],$this->get_sub_folder($root_path . DIRECTORY_SEPARATOR . $filename,$filename));
                         }

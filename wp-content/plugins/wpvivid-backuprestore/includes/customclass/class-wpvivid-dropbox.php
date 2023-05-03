@@ -113,6 +113,8 @@ class WPvivid_Dropbox extends WPvivid_Remote
             {
                 $file_data['size']=filesize($file);
                 $file_data['uploaded']=0;
+                $file_data['session_id']='';
+                $file_data['offset']=0;
                 $job_data[basename($file)]=$file_data;
             }
             WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_DROPBOX,WPVIVID_UPLOAD_UNDO,'Start uploading',$job_data);
@@ -143,6 +145,10 @@ class WPvivid_Dropbox extends WPvivid_Remote
                 $wpvivid_plugin->wpvivid_log->WriteLog('Uploading '.basename($file).' failed.','notice');
                 return $result;
             }
+            else
+            {
+                WPvivid_taskmanager::wpvivid_reset_backup_retry_times($task_id);
+            }
             $wpvivid_plugin->wpvivid_log->WriteLog('Finished uploading '.basename($file),'notice');
             $upload_job['job_data'][basename($file)]['uploaded'] = 1;
             WPvivid_taskmanager::update_backup_sub_task_progress($task_id, 'upload', WPVIVID_REMOTE_DROPBOX, WPVIVID_UPLOAD_SUCCESS, 'Uploading ' . basename($file) . ' completed.', $upload_job['job_data']);
@@ -157,15 +163,30 @@ class WPvivid_Dropbox extends WPvivid_Remote
         $this -> current_file_size = filesize($file);
         $this -> current_file_name = basename($file);
 
-        if($this -> current_file_size > $this -> upload_chunk_size){
-            $wpvivid_plugin->wpvivid_log->WriteLog('Creating upload session.','notice');
-            WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_DROPBOX,WPVIVID_UPLOAD_UNDO,'Start uploading '.basename($file).'.',$upload_job['job_data']);
-            $result = $dropbox -> upload_session_start();
-            if(isset($result['error_summary'])){
-                return array('result'=>WPVIVID_FAILED,'error'=>$result['error_summary']);
+        if($this -> current_file_size > $this -> upload_chunk_size)
+        {
+
+            if(empty($upload_job['job_data'][basename($file)]['session_id']))
+            {
+                $wpvivid_plugin->wpvivid_log->WriteLog('Creating upload session.','notice');
+                //WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_DROPBOX,WPVIVID_UPLOAD_UNDO,'Start uploading '.basename($file).'.',$upload_job['job_data']);
+                $result = $dropbox -> upload_session_start();
+                if(isset($result['error_summary']))
+                {
+                    return array('result'=>WPVIVID_FAILED,'error'=>$result['error_summary']);
+                }
+
+                $upload_job['job_data'][basename($file)]['session_id']= $result['session_id'];
+                WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_DROPBOX,WPVIVID_UPLOAD_UNDO,'Start uploading '.basename($file).'.',$upload_job['job_data']);
+
+                $build_id = $result['session_id'];
             }
-            $build_id = $result['session_id'];
-            $result = $this -> large_file_upload($build_id,$file,$dropbox,$callback);
+            else
+            {
+                $build_id = $upload_job['job_data'][basename($file)]['session_id'];
+            }
+
+            $result = $this -> large_file_upload($task_id,$build_id,$file,$dropbox,$callback);
         }else{
             $wpvivid_plugin->wpvivid_log->WriteLog('Uploaded files are less than 2M.','notice');
             $result = $dropbox -> upload($path,$file);
@@ -180,14 +201,27 @@ class WPvivid_Dropbox extends WPvivid_Remote
         return $result;
     }
 
-    public function large_file_upload($session_id,$file,$dropbox,$callback){
+    public function large_file_upload($task_id,$session_id,$file,$dropbox,$callback)
+    {
+        global $wpvivid_plugin;
         $fh = fopen($file,'rb');
-        $offset = 0;
-        while(!feof($fh)){
-            $data = fread($fh,$this -> upload_chunk_size);
+
+        $upload_job=WPvivid_taskmanager::get_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_DROPBOX);
+
+        $offset = $upload_job['job_data'][basename($file)]['offset'];
+        $wpvivid_plugin->wpvivid_log->WriteLog('offset:'.size_format($offset,2),'notice');
+        if ($offset > 0)
+        {
+            fseek($fh, $offset);
+        }
+
+        while($data =fread($fh,$this -> upload_chunk_size))
+        {
             $ret = $this -> _upload_loop($session_id,$offset,$data,$dropbox);
             if($ret['result'] !== WPVIVID_SUCCESS)
-                break;
+            {
+                return $ret;
+            }
 
             if((time() - $this -> last_time) >3)
             {
@@ -199,22 +233,39 @@ class WPvivid_Dropbox extends WPvivid_Remote
                 $this -> last_size = $offset;
                 $this -> last_time = time();
             }
-            $offset += $this -> upload_chunk_size;
-        }
-        if($ret['result'] === WPVIVID_SUCCESS){
-            $options = $this -> options;
-            $path = trailingslashit($options['path']).basename($file);
-            $result = $dropbox -> upload_session_finish($session_id,$this -> current_file_size,$path);
-            if(isset($result['error_summary'])){
-                $ret = array('result' => WPVIVID_FAILED,'error' => $result['error_summary']);
-            }else{
-                $ret = array('result'=> WPVIVID_SUCCESS);
+
+            if(isset($ret['correct_offset']))
+            {
+                $offset = $ret['correct_offset'];
+                fseek($fh, $offset);
+                $wpvivid_plugin->wpvivid_log->WriteLog('correct_offset:'.size_format($offset,2),'notice');
             }
+            else
+            {
+                $offset = ftell($fh);
+            }
+
+            $upload_job['job_data'][basename($file)]['offset']=$offset;
+            $wpvivid_plugin->wpvivid_log->WriteLog('offset:'.size_format($offset,2),'notice');
+            WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_DROPBOX,WPVIVID_UPLOAD_SUCCESS,'Uploading '.basename($file),$upload_job['job_data']);
         }
+
+        $options = $this -> options;
+        $path = trailingslashit($options['path']).basename($file);
+        $result = $dropbox -> upload_session_finish($session_id,$offset,$path);
+        if(isset($result['error_summary']))
+        {
+            $wpvivid_plugin->wpvivid_log->WriteLog('offset:'.$offset,'notice');
+            $wpvivid_plugin->wpvivid_log->WriteLog('result:'.json_encode($result),'notice');
+            $ret = array('result' => WPVIVID_FAILED,'error' => $result['error_summary']);
+        }else{
+            $ret = array('result'=> WPVIVID_SUCCESS);
+        }
+
         fclose($fh);
         return $ret;
     }
-    public function _upload_loop($session_id,&$offset,$data,$dropbox)
+    public function _upload_loop($session_id,$offset,$data,$dropbox)
     {
         $result['result']=WPVIVID_SUCCESS;
         for($i =0;$i <WPVIVID_REMOTE_CONNECT_RETRY_TIMES; $i ++)
@@ -224,9 +275,9 @@ class WPvivid_Dropbox extends WPvivid_Remote
             {
                 if(strstr($result['error_summary'],'incorrect_offset'))
                 {
-                    $offset=$result['error']['correct_offset'];
-                    $result = array('result' => WPVIVID_FAILED,'error' => 'Uploading '.$this -> current_file_name.' to Dropbox server failed. '.$result['error_summary']);
-                    //return $result;
+                    $result['result']=WPVIVID_SUCCESS;
+                    $result['correct_offset']=$result['error']['correct_offset'];
+                    return $result;
                 }
                 else
                 {
@@ -447,7 +498,7 @@ class WPvivid_Dropbox extends WPvivid_Remote
                     <?php _e('Please read <a target="_blank" href="https://wpvivid.com/privacy-policy" style="text-decoration: none;">this privacy policy</a> for use of our Dropbox authorization app (none of your backup data is sent to us).', 'wpvivid-backuprestore'); ?>
                 </div>
                 <div style="color:#8bc34a; padding: 10px 10px 10px 0;">
-                    <strong><?php esc_html_e('Authentication is done, please continue to enter the storge information, then click \'Add Now\' button to save it.', 'wpvivid-backuprestore'); ?></strong>
+                    <strong><?php esc_html_e('Authentication is done, please continue to enter the storage information, then click \'Add Now\' button to save it.', 'wpvivid-backuprestore'); ?></strong>
                 </div>
                 <div style="padding: 10px 10px 10px 0;">
                     <strong><?php _e('Enter Your Dropbox Information', 'wpvivid-backuprestore'); ?></strong>

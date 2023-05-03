@@ -13,7 +13,7 @@ if ( ! class_exists( 'Astra_Ext_Advanced_Hooks_Markup' ) ) {
 	 * @since 1.0.0
 	 */
 	// @codingStandardsIgnoreStart
-	class Astra_Ext_Advanced_Hooks_Markup { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedClassFound
+	class Astra_Ext_Advanced_Hooks_Markup {
 		// @codingStandardsIgnoreEnd
 
 		/**
@@ -57,7 +57,7 @@ if ( ! class_exists( 'Astra_Ext_Advanced_Hooks_Markup' ) ) {
 			add_action( 'wp_enqueue_scripts', array( $this, 'add_styles' ) );
 			add_action( 'astra_advanced_hook_template', array( $this, 'template_empty_content' ) );
 
-			add_filter( 'wp_enqueue_scripts', array( $this, 'advanced_hook_scripts' ) );
+			add_action( 'wp_enqueue_scripts', array( $this, 'advanced_hook_scripts' ) );
 			add_filter( 'the_content', array( $this, 'advanced_hook_content_markup' ) );
 			add_filter( 'single_template', array( $this, 'get_custom_post_type_template' ) );
 
@@ -300,6 +300,9 @@ if ( ! class_exists( 'Astra_Ext_Advanced_Hooks_Markup' ) ) {
 						$priority
 					);
 				} else {
+					if ( 'custom_hook' === $action ) {
+						$action = get_post_meta( $post_id, 'ast-custom-hook', true );
+					}
 					add_action(
 						$action,
 						function() use ( $post_id ) {
@@ -334,12 +337,14 @@ if ( ! class_exists( 'Astra_Ext_Advanced_Hooks_Markup' ) ) {
 				$post_id = get_the_id();
 
 				if ( ! static::get_time_duration_eligibility( $post_id ) ) {
-					return;
+					return '';
 				}
 
-				$php_snippet = $this->get_php_snippet( $post_id );
-				if ( $php_snippet ) {
-					$content = $php_snippet;
+				if ( ASTRA_WITH_EXTENDED_FUNCTIONALITY ) {
+					$php_snippet = astra_addon_get_php_snippet( $post_id );
+					if ( $php_snippet ) {
+						$content = $php_snippet;
+					}
 				}
 
 				$display_device_classes = $this->get_display_device( $post_id );
@@ -353,28 +358,6 @@ if ( ! class_exists( 'Astra_Ext_Advanced_Hooks_Markup' ) ) {
 				}
 			}
 			return $content;
-		}
-
-		/**
-		 * Get PHP snippet if enabled.
-		 *
-		 * @param  int $post_id Post Id.
-		 * @return boolean|html
-		 */
-		public function get_php_snippet( $post_id ) {
-			$php_enabled = get_post_meta( $post_id, 'editor_type', true );
-			if ( 'code_editor' === $php_enabled ) {
-				$code = get_post_meta( $post_id, 'ast-advanced-hook-php-code', true );
-				if ( defined( 'ASTRA_ADVANCED_HOOKS_DISABLE_PHP' ) ) {
-					return $code;
-				}
-				ob_start();
-				// @codingStandardsIgnoreStart
-				eval( '?>' . $code . '<?php ' );
-				// @codingStandardsIgnoreEnd
-				return ob_get_clean();
-			}
-			return false;
 		}
 
 		/**
@@ -637,6 +620,9 @@ if ( ! class_exists( 'Astra_Ext_Advanced_Hooks_Markup' ) ) {
 
 					}
 					if ( isset( $layout[0] ) && '0' != $layout[0] && 'header' != $layout[0] && 'footer' != $layout[0] ) {
+						if ( 'custom_hook' === $action ) {
+							$action = get_post_meta( $post_id, 'ast-custom-hook', true );
+						}
 						// Add Action for advanced-hooks.
 						add_action(
 							$action,
@@ -723,7 +709,6 @@ if ( ! class_exists( 'Astra_Ext_Advanced_Hooks_Markup' ) ) {
 			return $classes;
 		}
 
-
 		/**
 		 * Check if post eligible to show on time duration
 		 *
@@ -766,7 +751,6 @@ if ( ! class_exists( 'Astra_Ext_Advanced_Hooks_Markup' ) ) {
 			if ( false === apply_filters( 'astra_addon_render_custom_layout_content', true, $post_id ) || 'no' === $enabled ) {
 				return;
 			}
-
 			if ( ! static::get_time_duration_eligibility( $post_id ) ) {
 				return;
 			}
@@ -778,15 +762,14 @@ if ( ! class_exists( 'Astra_Ext_Advanced_Hooks_Markup' ) ) {
 			$exclude_wrapper_hooks = array( 'astra_html_before', 'astra_body_top', 'astra_head_top', 'astra_head_bottom', 'wp_head', 'astra_body_bottom', 'wp_footer' );
 			$with_wrapper          = ! in_array( $action, $exclude_wrapper_hooks );
 			if ( $with_wrapper ) {
-				echo '<div class="astra-advanced-hook-' . esc_attr( $post_id ) . ' ' . esc_attr( $display_device_classes ) . '">';
+				?>
+					<div class="astra-advanced-hook-<?php echo esc_attr( $post_id ); ?> <?php echo esc_attr( $display_device_classes ); ?>">
+				<?php
 			}
 
-			$php_snippet = $this->get_php_snippet( $post_id );
-			if ( $php_snippet ) {
-				echo $php_snippet; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-
+			if ( ASTRA_WITH_EXTENDED_FUNCTIONALITY && astra_addon_get_php_snippet( $post_id ) ) {
+				astra_addon_echo_php_snippet( $post_id );
 			} else {
-
 				if ( class_exists( 'Astra_Addon_Page_Builder_Compatibility' ) ) {
 
 					$page_builder_base_instance = Astra_Addon_Page_Builder_Compatibility::get_instance();
@@ -799,7 +782,9 @@ if ( ! class_exists( 'Astra_Ext_Advanced_Hooks_Markup' ) ) {
 			}
 
 			if ( $with_wrapper ) {
-				echo '</div>';
+				?>
+					</div>
+				<?php
 			}
 		}
 
@@ -1014,7 +999,12 @@ if ( ! class_exists( 'Astra_Ext_Advanced_Hooks_Markup' ) ) {
 			if ( version_compare( ELEMENTOR_VERSION, '1.5.0', '<' ) ) {
 				return ( 'builder' === Elementor\Plugin::$instance->db->get_edit_mode( $id ) );
 			} else {
-				return Elementor\Plugin::$instance->db->is_built_with_elementor( $id );
+				$elementor_document = Elementor\Plugin::$instance->documents->get( $id );
+				if ( $elementor_document ) {
+					return $elementor_document->is_built_with_elementor();
+				} else {
+					return false;
+				}
 			}
 
 			return false;

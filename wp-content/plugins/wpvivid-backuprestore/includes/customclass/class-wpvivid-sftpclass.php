@@ -409,7 +409,7 @@ class WPvivid_SFTPClass extends WPvivid_Remote{
         $ret = $conn->login($username,$password);
         if(!$ret)
         {
-            return array('result'=>WPVIVID_FAILED,'error'=>'Login failed. You have entered the incorrect credential(s). Please try again.');
+            return array('result'=>WPVIVID_FAILED,'error'=>'The connection failed because of incorrect credentials or server connection timeout. Please try again.');
         }
 
 		return $conn;
@@ -506,6 +506,7 @@ class WPvivid_SFTPClass extends WPvivid_Remote{
 
                 if($result)
                 {
+                    WPvivid_taskmanager::wpvivid_reset_backup_retry_times($task_id);
                     $wpvivid_plugin->wpvivid_log->WriteLog('Finished uploading '.basename($file),'notice');
                     $upload_job['job_data'][basename($file)]['uploaded']=1;
                     WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_SFTP,WPVIVID_UPLOAD_SUCCESS,'Uploading '.basename($file).' completed.',$upload_job['job_data']);

@@ -726,4 +726,14 @@ class WPvivid_taskmanager
         }
         return false;
     }
+
+    public static function wpvivid_reset_backup_retry_times($task_id)
+    {
+        $task=self::get_task($task_id);
+        if($task!==false)
+        {
+            $task['status']['resume_count']=0;
+            WPvivid_Setting::update_task($task_id,$task);
+        }
+    }
 }

@@ -3,12 +3,15 @@
 function wpvivid_general_settings()
 {
     $general_setting=WPvivid_Setting::get_setting(true, "");
-    $display_backup_count = $general_setting['options']['wpvivid_common_setting']['max_backup_count'];
+    $display_backup_count=isset($general_setting['options']['wpvivid_common_setting']['max_backup_count'])?$general_setting['options']['wpvivid_common_setting']['max_backup_count']:WPVIVID_DEFAULT_BACKUP_COUNT;
+    //
     $display_backup_count=intval($display_backup_count);
-    if($display_backup_count > 7){
+    if($display_backup_count > 7)
+    {
         $display_backup_count = 7;
     }
-    if($general_setting['options']['wpvivid_common_setting']['estimate_backup']){
+    if($general_setting['options']['wpvivid_common_setting']['estimate_backup'])
+    {
         $wpvivid_setting_estimate_backup='checked';
     }
     else{
@@ -299,16 +302,6 @@ function wpvivid_clean_junk()
 {
     global $wpvivid_plugin;
     $junk_file=$wpvivid_plugin->_junk_files_info_ex();
-    //echo json_encode($junk_file);
-    //$junk_file=$wpvivid_plugin->_junk_files_info();
-    /*$junk_file['sum_size']=0;
-    $junk_file['log_dir_size']=0;
-    $junk_file['backup_dir_size'] =0;
-    $junk_file['log_path'] = $log_dir = $wpvivid_plugin->wpvivid_log->GetSaveLogFolder();
-    $dir = WPvivid_Setting::get_backupdir();
-    $junk_file['old_files_path'] = WP_CONTENT_DIR . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . WPVIVID_DEFAULT_ROLLBACK_DIR;
-    $dir = WP_CONTENT_DIR . DIRECTORY_SEPARATOR . $dir;
-    $junk_file['junk_path'] = $dir;*/
     ?>
     <div class="postbox schedule-tab-block" id="wpvivid_clean_junk">
         <div>
@@ -342,12 +335,6 @@ function wpvivid_clean_junk()
                     <span class="wpvivid-element-space-right"><?php _e( 'Junk Size:', 'wpvivid-backuprestore' ); ?></span>
                     <span class="wpvivid-size-calc" id="wpvivid_junk_size"><?php _e($junk_file['junk_size'], 'wpvivid-backuprestore'); ?></span>
                 </label>
-                <!--<label for="wpvivid_junk_temporary_file">
-                    <input type="checkbox" id="wpvivid_junk_temporary_file" option="junk-files" name="old_files" value="junk-temporary-files" />
-                    <span class="wpvivid-element-space-right"><?php _e( 'Temporary Files', 'wpvivid-backuprestore' ); ?></span>
-                    <span style="margin-right: 2px;"><?php _e('Path:', 'wpvivid-backuprestore'); ?></span><span id="wpvivid_restore_temp_file_path"><?php _e($junk_file['old_files_path'], 'wpvivid-backuprestore'); ?></span>
-                    <p><?php echo __('Temporary Files are created by WPvivid when restoring a website.', 'wpvivid-backuprestore'); ?></p>
-                </label>-->
             </fieldset>
         </div>
         <div><input class="button-primary" id="wpvivid_clean_junk_file" type="submit" name="Empty-all-files" value="<?php esc_attr_e( 'Empty', 'wpvivid-backuprestore' ); ?>" /></div>
@@ -448,7 +435,7 @@ function wpvivid_clean_junk()
 
         jQuery(document).ready(function ()
         {
-            wpvivid_calculate_diskspaceused();
+            //wpvivid_calculate_diskspaceused();
         });
     </script>
     <?php
@@ -526,77 +513,89 @@ function wpvivid_export_import_settings()
 
 function wpvivid_advanced_settings()
 {
-    $general_setting=WPvivid_Setting::get_setting(true, "");
-    $wpvivid_setting_no_compress='';
-    $wpvivid_setting_compress='';
-    if($general_setting['options']['wpvivid_compress_setting']['no_compress']){
-        $wpvivid_setting_no_compress='checked';
-    }
-    else{
-        $wpvivid_setting_compress='checked';
-    }
+    //wpvivid_compress_setting backup
+    $common_setting=get_option('wpvivid_common_setting',array());
+    $max_file_size=isset($common_setting['max_file_size'])?$common_setting['max_file_size']:WPVIVID_DEFAULT_MAX_FILE_SIZE;
+    $exclude_file_size=isset($common_setting['exclude_file_size'])?$common_setting['exclude_file_size']:WPVIVID_DEFAULT_EXCLUDE_FILE_SIZE;
+    $max_execution_time=isset($common_setting['max_execution_time'])?$common_setting['max_execution_time']:WPVIVID_MAX_EXECUTION_TIME;
+    $memory_limit=isset($common_setting['memory_limit'])?$common_setting['memory_limit']:WPVIVID_MEMORY_LIMIT;
+    $migrate_size=isset($common_setting['migrate_size'])?$common_setting['migrate_size']:WPVIVID_MIGRATE_SIZE;
+    $wpvivid_max_resume_count=isset($common_setting['max_resume_count'])?$common_setting['max_resume_count']:WPVIVID_RESUME_RETRY_TIMES;
+    //$compress_file_use_cache=isset($common_setting['compress_file_use_cache'])?$common_setting['compress_file_use_cache']:false;
+    $compress_file_count=isset($common_setting['compress_file_count'])?$common_setting['compress_file_count']:500;
+    $max_sql_file_size=isset($common_setting['max_sql_file_size'])?$common_setting['max_sql_file_size']:200;
 
-    if(!isset($general_setting['options']['wpvivid_compress_setting']['subpackage_plugin_upload'])){
-        $subpackage_plugin_upload = '';
+    //restore
+    $restore_max_execution_time=isset($common_setting['restore_max_execution_time'])?$common_setting['restore_max_execution_time']:WPVIVID_RESTORE_MAX_EXECUTION_TIME;
+    $restore_memory_limit=isset($common_setting['restore_memory_limit'])?$common_setting['restore_memory_limit']:WPVIVID_RESTORE_MEMORY_LIMIT;
+    $replace_rows_pre_request=isset($common_setting['replace_rows_pre_request'])?$common_setting['replace_rows_pre_request']:10000;
+    $sql_file_buffer_pre_request=isset($common_setting['sql_file_buffer_pre_request'])?$common_setting['sql_file_buffer_pre_request']:'5';
+    $use_index=isset($common_setting['use_index'])?$common_setting['use_index']:1;
+    if($use_index)
+    {
+        $use_index=' checked';
     }
-    else{
-        if($general_setting['options']['wpvivid_compress_setting']['subpackage_plugin_upload']){
-            $subpackage_plugin_upload = 'checked';
-        }
-        else{
-            $subpackage_plugin_upload = '';
-        }
+    else
+    {
+        $use_index=' ';
     }
-    if(!isset($general_setting['options']['wpvivid_common_setting']['max_resume_count'])){
-        $wpvivid_max_resume_count = WPVIVID_RESUME_RETRY_TIMES;
-    }
-    else{
-        $wpvivid_max_resume_count = intval($general_setting['options']['wpvivid_common_setting']['max_resume_count']);
-    }
-    if(!isset($general_setting['options']['wpvivid_common_setting']['memory_limit'])){
-        $general_setting['options']['wpvivid_common_setting']['memory_limit']=WPVIVID_MEMORY_LIMIT;
-    }
-    if(!isset($general_setting['options']['wpvivid_common_setting']['restore_memory_limit'])){
-        $general_setting['options']['wpvivid_common_setting']['restore_memory_limit']=WPVIVID_RESTORE_MEMORY_LIMIT;
-    }
-    if(!isset($general_setting['options']['wpvivid_common_setting']['migrate_size'])){
-        $general_setting['options']['wpvivid_common_setting']['migrate_size']=WPVIVID_MIGRATE_SIZE;
-    }
-    if(isset($general_setting['options']['wpvivid_common_setting']['db_connect_method'])){
-        if($general_setting['options']['wpvivid_common_setting']['db_connect_method'] === 'wpdb'){
+    $unzip_files_pre_request=isset($common_setting['unzip_files_pre_request'])?$common_setting['unzip_files_pre_request']:1000;
+
+    //common
+    if(isset($common_setting['db_connect_method']))
+    {
+        if($common_setting['db_connect_method'] === 'wpdb')
+        {
             $db_method_wpdb = 'checked';
             $db_method_pdo  = '';
         }
-        else{
+        else
+        {
             $db_method_wpdb = '';
             $db_method_pdo  = 'checked';
         }
     }
-    else{
+    else
+    {
         $db_method_wpdb = 'checked';
         $db_method_pdo  = '';
     }
-    if(isset($general_setting['options']['wpvivid_common_setting']['restore_max_execution_time'])){
-        $restore_max_execution_time = intval($general_setting['options']['wpvivid_common_setting']['restore_max_execution_time']);
+
+    if(isset($common_setting['zip_method']))
+    {
+        if($common_setting['zip_method'] === 'ziparchive')
+        {
+            $zip_method_archive = 'checked';
+            $zip_method_pclzip  = '';
+        }
+        else{
+            $zip_method_archive = '';
+            $zip_method_pclzip  = 'checked';
+        }
     }
-    else{
-        $restore_max_execution_time = WPVIVID_RESTORE_MAX_EXECUTION_TIME;
+    else
+    {
+        if(class_exists('ZipArchive'))
+        {
+            if(method_exists('ZipArchive', 'addFile'))
+            {
+                $zip_method_archive = 'checked';
+                $zip_method_pclzip  = '';
+            }
+            else
+            {
+                $zip_method_archive = '';
+                $zip_method_pclzip  = 'checked';
+            }
+        }
+        else
+        {
+            $zip_method_archive = '';
+            $zip_method_pclzip  = 'checked';
+        }
     }
+
     ?>
-    <div class="postbox schedule-tab-block setting-page-content">
-        <div>
-            <p><strong><?php _e('Enable the option when backup failed.', 'wpvivid-backuprestore'); ?></strong>&nbsp<?php _e('Special optimization for web hosting/shared hosting', 'wpvivid-backuprestore'); ?></p>
-            <div>
-                <label>
-                    <input type="checkbox" option="setting" name="subpackage_plugin_upload" <?php esc_attr_e($subpackage_plugin_upload); ?> />
-                    <span><strong><?php _e('Enable optimization mode for web hosting/shared hosting', 'wpvivid-backuprestore'); ?></strong></span>
-                </label>
-                <div>
-                    <p><?php _e('Enabling this option can improve the backup success rate, but it will take more time for backup.', 'wpvivid-backuprestore'); ?></p>
-                </div>
-            </div>
-        </div>
-    </div>
     <div class="postbox schedule-tab-block wpvivid-setting-addon" style="margin-bottom: 10px; padding-bottom: 0;">
         <div class="wpvivid-element-space-bottom">
             <strong><?php _e('Database access method.', 'wpvivid-backuprestore'); ?></strong>
@@ -614,57 +613,79 @@ function wpvivid_advanced_settings()
             </label>
         </div>
     </div>
+    <div class="postbox schedule-tab-block wpvivid-setting-addon" style="margin-bottom: 10px; padding-bottom: 0;">
+        <div class="wpvivid-element-space-bottom">
+            <strong><?php _e('Compress method.', 'wpvivid-backuprestore'); ?></strong>
+        </div>
+        <div class="wpvivid-element-space-bottom">
+            <label>
+                <input type="radio" option="setting" name="zip_method" value="ziparchive" <?php esc_attr_e($zip_method_archive); ?> />
+                <span class="wpvivid-element-space-right"><strong>ZipArchive</strong></span><span><?php _e('ZipArchive has a better flexibility which provides a higher backup success rate and speed. It is also the default zip method WPvivid pro uses. Using this method requires the ZIP extension to be installed within your PHP.', 'wpvivid-backuprestore'); ?></span>
+            </label>
+        </div>
+        <div class="wpvivid-element-space-bottom">
+            <label>
+                <input type="radio" option="setting" name="zip_method" value="pclzip" <?php esc_attr_e($zip_method_pclzip); ?> />
+                <span class="wpvivid-element-space-right"><strong>PCLZIP</strong></span><span><?php _e('PclZip is a much slower but more stable zip method that is included in every WordPress install. WPvivid will automatically switch to PclZip if the ZIP extension is not installed within your PHP.', 'wpvivid-backuprestore'); ?></span>
+            </label>
+        </div>
+    </div>
     <div class="postbox schedule-tab-block setting-page-content">
-        <fieldset>
-            <label>
-                <input type="radio" option="setting" name="no_compress" value="1" <?php esc_attr_e($wpvivid_setting_no_compress, 'wpvivid-backuprestore'); ?> />
-                <span class="wpvivid-element-space-right" title="<?php _e( 'It will cause a lower CPU Usage and is recommended in a web hosting/ shared hosting environment.', 'wpvivid-backuprestore' ); ?>"><?php _e( 'Only Archive without compressing', 'wpvivid-backuprestore' ); ?></span>
-            </label>
-            <label>
-                <input type="radio" option="setting" name="no_compress" value="0" <?php esc_attr_e($wpvivid_setting_compress, 'wpvivid-backuprestore'); ?> />
-                <span class="wpvivid-element-space-right" title="<?php _e( 'It will cause a higher CPU usage and is recommended in a VPS or dedicated hosting environment.', 'wpvivid-backuprestore' ); ?>"><?php _e( 'Compress and Archive', 'wpvivid-backuprestore' ); ?></span>
-            </label>
-            <label style="display: none;">
-                <input type="radio" option="setting" name="compress_type" value="zip" checked />
-                <input type="radio" option="setting" name="use_temp_file" value="1" checked />
-                <input type="radio" option="setting" name="use_temp_size" value="16" checked />
-            </label>
-        </fieldset>
         <div style="padding-top: 10px;">
             <div><strong><?php _e('Compress Files Every', 'wpvivid-backuprestore'); ?></strong></div>
             <div class="setting-tab-block">
-                <input type="text" placeholder="200" option="setting" name="max_file_size" id="wpvivid_max_zip" class="all-options" value="<?php esc_attr_e(str_replace('M', '', $general_setting['options']['wpvivid_compress_setting']['max_file_size']), 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" />MB
+                <input type="text" placeholder="200" option="setting" name="max_file_size" id="wpvivid_max_zip" class="all-options" value="<?php esc_attr_e(str_replace('M', '', $max_file_size), 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" />MB
                 <div><p><?php _e( 'Some web hosting providers limit large zip files (e.g. 200MB), and therefore splitting your backup into many parts is an ideal way to avoid hitting the limitation if you are running a big website.  Please try to adjust the value if you are encountering backup errors. If you use a value of 0 MB, any backup files won\'t be split.', 'wpvivid-backuprestore' ); ?></div></p>
             </div>
             <div><strong><?php _e('Exclude the files which are larger than', 'wpvivid-backuprestore'); ?></strong></div>
             <div class="setting-tab-block">
-                <input type="text" placeholder="0" option="setting" name="exclude_file_size" id="wpvivid_ignore_large" class="all-options" value="<?php esc_attr_e($general_setting['options']['wpvivid_compress_setting']['exclude_file_size'], 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" />MB
+                <input type="text" placeholder="0" option="setting" name="exclude_file_size" id="wpvivid_ignore_large" class="all-options" value="<?php esc_attr_e($exclude_file_size, 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" />MB
                 <div><p><?php _e( 'Using the option will ignore the file larger than the certain size in MB when backing up, \'0\' (zero) means unlimited.', 'wpvivid-backuprestore' ); ?></p></div>
             </div>
             <div><strong><?php _e('PHP script execution timeout for backup', 'wpvivid-backuprestore'); ?></strong></div>
             <div class="setting-tab-block">
-                <input type="text" placeholder="900" option="setting" name="max_execution_time" id="wpvivid_option_timeout" class="all-options" value="<?php esc_attr_e($general_setting['options']['wpvivid_common_setting']['max_execution_time'], 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" /><?php esc_html_e('Seconds', 'wpvivid-backuprestore'); ?>
+                <input type="text" placeholder="900" option="setting" name="max_execution_time" id="wpvivid_option_timeout" class="all-options" value="<?php esc_attr_e($max_execution_time, 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" /><?php esc_html_e('Seconds', 'wpvivid-backuprestore'); ?>
                 <div><p><?php _e( 'The time-out is not your server PHP time-out. With the execution time exhausted, our plugin will shut the process of backup down. If the progress of backup encounters a time-out, that means you have a medium or large sized website, please try to scale the value bigger.', 'wpvivid-backuprestore' ); ?></p></div>
-            </div>
-            <div><strong><?php _e('PHP script execution timeout for restore', 'wpvivid-backuprestore'); ?></strong></div>
-            <div class="setting-tab-block">
-                <input type="text" placeholder="1800" option="setting" name="restore_max_execution_time" class="all-options" value="<?php esc_attr_e($restore_max_execution_time); ?>" onkeyup="value=value.replace(/\D/g,'')" /><?php esc_html_e('Seconds', 'wpvivid-backuprestore'); ?>
-                <div><p><?php _e( 'The time-out is not your server PHP time-out. With the execution time exhausted, our plugin will shut the process of restore down. If the progress of restore encounters a time-out, that means you have a medium or large sized website, please try to scale the value bigger.', 'wpvivid-backuprestore' ); ?></p></div>
             </div>
             <div><strong><?php _e('PHP Memory Limit for backup', 'wpvivid-backuprestore'); ?></strong></div>
             <div class="setting-tab-block">
-                <input type="text" placeholder="256" option="setting" name="memory_limit" class="all-options" value="<?php esc_attr_e(str_replace('M', '', $general_setting['options']['wpvivid_common_setting']['memory_limit']), 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" />MB
+                <input type="text" placeholder="256" option="setting" name="memory_limit" class="all-options" value="<?php esc_attr_e(str_replace('M', '', $memory_limit), 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" />MB
                 <div><p><?php _e('Adjust this value to apply for a temporary PHP memory limit for WPvivid backup plugin to run a backup. We set this value to 256M by default. Increase the value if you encounter a memory exhausted error. Note: some web hosting providers may not support this.', 'wpvivid-backuprestore'); ?></p></div>
             </div>
-            <div><strong><?php _e('PHP Memory Limit for restoration', 'wpvivid-backuprestore'); ?></strong></div>
+            <div><strong><?php _e('The number of files compressed to the backup zip each time', 'wpvivid-backuprestore'); ?></strong></div>
             <div class="setting-tab-block">
-                <input type="text" placeholder="256" option="setting" name="restore_memory_limit" class="all-options" value="<?php esc_attr_e(str_replace('M', '', $general_setting['options']['wpvivid_common_setting']['restore_memory_limit']), 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" />MB
-                <div><p><?php _e('Adjust this value to apply for a temporary PHP memory limit for WPvivid backup plugin in restore process. We set this value to 256M by default. Increase the value if you encounter a memory exhausted error. Note: some web hosting providers may not support this.', 'wpvivid-backuprestore'); ?></p></div>
+                <input type="text" placeholder="500" option="setting" name="compress_file_count" id="wpvivid_compress_file_count" class="all-options" value="<?php esc_attr_e($compress_file_count, 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" /><?php esc_html_e('Files', 'wpvivid-backuprestore'); ?>
+                <div><p><?php _e( 'When taking a backup, the plugin will compress this number of files to the backup zip each time. The default value is 500. The lower the value, the longer time the backup will take, but the higher the backup success rate. If you encounter a backup timeout issue, try to decrease this value..', 'wpvivid-backuprestore' ); ?></p></div>
+            </div>
+            <div><strong><?php _e('Split a sql file every this size', 'wpvivid-backuprestore'); ?></strong></div>
+            <div class="setting-tab-block">
+                <input type="text" placeholder="200" option="setting" name="max_sql_file_size" id="wpvivid_max_sql_file_size" class="all-options" value="<?php esc_attr_e($max_sql_file_size, 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" /><?php esc_html_e('MB', 'wpvivid-backuprestore'); ?>
+                <div><p><?php _e( 'Some web hosting providers limit large zip files (e.g. 200MB), and therefore splitting your backup into many parts is an ideal way to avoid hitting the limitation if you are running a big website. Please try to adjust the value if you are encountering backup errors. If you use a value of 0 MB, any backup files won\'t be split.', 'wpvivid-backuprestore' ); ?></p></div>
             </div>
             <div><strong><?php _e('Chunk Size', 'wpvivid-backuprestore'); ?></strong></div>
             <div class="setting-tab-block">
-                <input type="text" placeholder="2048" option="setting" name="migrate_size" class="all-options" value="<?php esc_attr_e($general_setting['options']['wpvivid_common_setting']['migrate_size']); ?>" onkeyup="value=value.replace(/\D/g,'')" />KB
+                <input type="text" placeholder="2048" option="setting" name="migrate_size" class="all-options" value="<?php esc_attr_e($migrate_size); ?>" onkeyup="value=value.replace(/\D/g,'')" />KB
                 <div><p><?php _e('e.g.  if you choose a chunk size of 2MB, a 8MB file will use 4 chunks. Decreasing this value will break the ISP\'s transmission limit, for example:512KB', 'wpvivid-backuprestore'); ?></p></div>
+            </div>
+            <div><strong><?php _e('PHP script execution timeout for restore', 'wpvivid-backuprestore'); ?></strong></div>
+            <div class="setting-tab-block">
+                <input type="text" placeholder="300" option="setting" name="restore_max_execution_time" class="all-options" value="<?php esc_attr_e($restore_max_execution_time); ?>" onkeyup="value=value.replace(/\D/g,'')" /><?php esc_html_e('Seconds', 'wpvivid-backuprestore'); ?>
+                <div><p><?php _e( 'The time-out is not your server PHP time-out. With the execution time exhausted, our plugin will shut the process of restore down. If the progress of restore encounters a time-out, that means you have a medium or large sized website, please try to scale the value bigger.', 'wpvivid-backuprestore' ); ?></p></div>
+            </div>
+            <div><strong><?php _e('PHP Memory Limit for restoration', 'wpvivid-backuprestore'); ?></strong></div>
+            <div class="setting-tab-block">
+                <input type="text" placeholder="256" option="setting" name="restore_memory_limit" class="all-options" value="<?php esc_attr_e(str_replace('M', '', $restore_memory_limit), 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" />MB
+                <div><p><?php _e('Adjust this value to apply for a temporary PHP memory limit for WPvivid backup plugin in restore process. We set this value to 256M by default. Increase the value if you encounter a memory exhausted error. Note: some web hosting providers may not support this.', 'wpvivid-backuprestore'); ?></p></div>
+            </div>
+            <div><strong><?php _e('Maximum rows of data to be processed per request for restoration', 'wpvivid-backuprestore'); ?></strong></div>
+            <div class="setting-tab-block">
+                <input type="text" placeholder="10000" option="setting" name="replace_rows_pre_request" class="all-options" value="<?php esc_attr_e($replace_rows_pre_request, 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" />rows
+                <div><p><?php _e('The smaller it is, the slower the restoration will be, but the lower the chance of a timeout error.', 'wpvivid-backuprestore'); ?></p></div>
+            </div>
+            <div><strong><?php _e('Maximum size of sql file to be imported per request for restoration', 'wpvivid-backuprestore'); ?></strong></div>
+            <div class="setting-tab-block">
+                <input type="text" placeholder="5" option="setting" name="sql_file_buffer_pre_request" class="all-options" value="<?php esc_attr_e($sql_file_buffer_pre_request, 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" />MB
+                <div><p><?php _e('Maximum rows of data to be processed per request.', 'wpvivid-backuprestore'); ?></p></div>
             </div>
             <div>
                 <?php
@@ -681,6 +702,18 @@ function wpvivid_advanced_settings()
                 echo sprintf(__('<strong>Retrying </strong>%s<strong> times when encountering a time-out error</strong>', 'wpvivid-backuprestore'), $max_count_select);
                 ?>
             </div>
+        </div>
+    </div>
+    <div class="postbox schedule-tab-block wpvivid-setting-addon" style="margin-bottom: 10px; padding-bottom: 0;">
+        <div>
+            <div>
+                <input type="checkbox" option="setting" name="use_index" style="margin-right: 0px;" <?php esc_attr_e($use_index, 'wpvivid-backuprestore'); ?> />
+                <strong><?php _e('Extract files by index for restoration', 'wpvivid-backuprestore'); ?></strong>
+            </div>
+            <div><p><?php _e('Specify the number of files to be extracted per request. The lower the number is, the slower the restoration, but the lower the chance of a timeout error or restore failure.', 'wpvivid-backuprestore'); ?></p></div>
+        </div>
+        <div class="setting-tab-block">
+            <input type="text" placeholder="1000" option="setting" name="unzip_files_pre_request" class="all-options" value="<?php esc_attr_e($unzip_files_pre_request, 'wpvivid-backuprestore'); ?>" onkeyup="value=value.replace(/\D/g,'')" />Files are unzipped every PHP request
         </div>
     </div>
     <?php

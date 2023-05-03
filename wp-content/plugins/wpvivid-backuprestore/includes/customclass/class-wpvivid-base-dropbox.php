@@ -227,6 +227,7 @@ class Dropbox_Base{
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
         //todo delete this code
 //        curl_setopt($ch,CURLOPT_PROXY, '127.0.0.1:1080');

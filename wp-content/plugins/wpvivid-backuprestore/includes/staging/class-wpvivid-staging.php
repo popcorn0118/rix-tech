@@ -256,7 +256,7 @@ class WPvivid_Staging_Free
         $menu['tab']= 'admin.php?page='.apply_filters('wpvivid_white_label_plugin_name', 'wpvivid-staging');
         $menu['href']=$admin_url . 'admin.php?page='.apply_filters('wpvivid_white_label_plugin_name', 'wpvivid-staging');
         $menu['capability']='administrator';
-        $menu['index']=2;
+        $menu['index']=3;
         $toolbar_menus[$menu['parent']]['child'][$menu['id']]=$menu;
         return $toolbar_menus;
     }
@@ -268,7 +268,7 @@ class WPvivid_Staging_Free
         $submenu['menu_title']=__('Staging', 'wpvivid-backuprestore');
         $submenu['capability']='administrator';
         $submenu['menu_slug']=strtolower(sprintf('%s-staging', apply_filters('wpvivid_white_label_slug', 'wpvivid')));
-        $submenu['index']=2;
+        $submenu['index']=3;
         $submenu['function']=array($this, 'display_plugin_setup_page');
         $submenus[$submenu['menu_slug']]=$submenu;
         return $submenus;
@@ -836,7 +836,7 @@ class WPvivid_Staging_Free
     {
         if(is_multisite())
         {
-            switch_to_blog(get_main_network_id());
+            switch_to_blog(get_main_site_id());
             $staging=get_option('wpvivid_staging_data',false);
             restore_current_blog();
         }
@@ -1358,7 +1358,7 @@ class WPvivid_Staging_Free
         $redirect=false;
         if(is_multisite())
         {
-            switch_to_blog(get_main_network_id());
+            switch_to_blog(get_main_site_id());
             $staging_init=get_option('wpvivid_staging_init', false);
             $staging_finish=get_option('wpvivid_staging_finish', false);
             restore_current_blog();
@@ -1415,7 +1415,7 @@ class WPvivid_Staging_Free
             {
                 if(is_multisite())
                 {
-                    switch_to_blog(get_main_network_id());
+                    switch_to_blog(get_main_site_id());
                     $options=get_option('wpvivid_staging_options', false);
                     restore_current_blog();
                 }
@@ -2382,8 +2382,8 @@ class WPvivid_Staging_Free
 
 
                     $task = new WPvivid_Staging_Task();
-                    $task->set_memory_limit();
                     $task->setup_task($option);
+                    $task->set_memory_limit();
                     $task->update_action_time('create_time');
                     $this->log->CreateLogFile($task->get_log_file_name(), 'no_folder', 'staging');
                     $this->log->WriteLog('Start creating staging site.', 'notice');

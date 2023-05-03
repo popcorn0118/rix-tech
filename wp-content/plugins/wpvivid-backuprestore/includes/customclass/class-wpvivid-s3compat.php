@@ -173,6 +173,10 @@ class Wpvivid_S3Compat extends WPvivid_Remote{
                 $wpvivid_plugin->wpvivid_log->WriteLog('Uploading '.basename($file).' failed.','notice');
                 return $result;
             }
+            else
+            {
+                WPvivid_taskmanager::wpvivid_reset_backup_retry_times($task_id);
+            }
             $upload_job['job_data'][basename($file)]['uploaded']=1;
             $wpvivid_plugin->wpvivid_log->WriteLog('Finished uploading '.basename($file),'notice');
             WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_S3COMPAT,WPVIVID_UPLOAD_SUCCESS,'Uploading '.basename($file).' completed.',$upload_job['job_data']);

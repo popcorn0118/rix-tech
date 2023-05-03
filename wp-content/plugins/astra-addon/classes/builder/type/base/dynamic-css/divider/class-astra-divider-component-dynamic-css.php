@@ -3,8 +3,6 @@
  * Astra Divider Component Dynamic CSS.
  *
  * @package     astra-builder
- * @author      Astra
- * @copyright   Copyright (c) 2020, Astra
  * @link        https://wpastra.com/
  * @since       3.0.0
  */
@@ -51,7 +49,7 @@ class Astra_Divider_Component_Dynamic_CSS {
 
 			$_section = ( 'header' === $builder_type ) ? 'section-hb-divider-' . $index : 'section-fb-divider-' . $index;
 
-			$selector = ( 'header' === $builder_type ) ? '.ast-header-divider-' . $index : '.footer-widget-area[data-section="section-fb-divider-' . $index . '"]';
+			$selector = ( 'header' === $builder_type ) ? '.ast-header-divider-' . $index : '.ast-builder-grid-row-container-inner .footer-widget-area[data-section="section-fb-divider-' . $index . '"]';
 
 			$divider_style = astra_get_option( $builder_type . '-divider-' . $index . '-style' );
 			$divider_color = astra_get_option( $builder_type . '-divider-' . $index . '-color' );

@@ -546,6 +546,7 @@ class WPvivid_FTPClass extends WPvivid_Remote{
 
                 if($status == FTP_FINISHED)
                 {
+                    WPvivid_taskmanager::wpvivid_reset_backup_retry_times($task_id);
                     $wpvivid_plugin->wpvivid_log->WriteLog('Finished uploading '.basename($file),'notice');
                     $upload_job['job_data'][basename($file)]['uploaded']=1;
                     WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_FTP,WPVIVID_UPLOAD_SUCCESS,'Uploading '.basename($file).' completed.',$upload_job['job_data']);

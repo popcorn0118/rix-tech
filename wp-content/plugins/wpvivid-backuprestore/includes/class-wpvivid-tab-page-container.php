@@ -81,6 +81,10 @@ class WPvivid_Tab_Page_Container
                                     {
                                         do_action('wpvivid_add_staging_side_bar_ex' ,$side_bar, false);
                                     }
+                                    else if(get_current_screen()->id=='wpvivid-backup_page_wpvivid-snapshot-ex')
+                                    {
+                                        do_action('wpvivid_snapshot_add_sidebar_free');
+                                    }
                                     else
                                     {
                                         do_action('wpvivid_add_side_bar' ,$side_bar, false);

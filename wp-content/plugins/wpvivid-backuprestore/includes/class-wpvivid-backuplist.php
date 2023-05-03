@@ -206,7 +206,14 @@ class WPvivid_Backuplist
     public static function check_backuplist_limit($max_count)
     {
         $list = WPvivid_Setting::get_option('wpvivid_backup_list');
-        $size=sizeof($list);
+        if($list !== false)
+        {
+            $size=sizeof($list);
+        }
+        else
+        {
+            $size = 0;
+        }
         if($size>=$max_count)
         {
             $oldest_id=self::get_oldest_backup_id($list);
@@ -228,7 +235,14 @@ class WPvivid_Backuplist
     public static function get_out_of_date_backuplist($max_count)
     {
         $list = WPvivid_Setting::get_option('wpvivid_backup_list');
-        $size=sizeof($list);
+        if($list !== false)
+        {
+            $size=sizeof($list);
+        }
+        else
+        {
+            $size = 0;
+        }
         $out_of_date_list=array();
 
         if($max_count==0)
@@ -260,7 +274,14 @@ class WPvivid_Backuplist
     public static function get_out_of_date_backuplist_info($max_count)
     {
         $list = WPvivid_Setting::get_option('wpvivid_backup_list');
-        $size=sizeof($list);
+        if($list !== false)
+        {
+            $size=sizeof($list);
+        }
+        else
+        {
+            $size = 0;
+        }
         $out_of_date_list['size']=0;
         $out_of_date_list['count']=0;
 

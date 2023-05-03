@@ -87,7 +87,8 @@ class WPvivid_Staging_Log_Free
             $tempfile=@fopen(WP_CONTENT_DIR.DIRECTORY_SEPARATOR.'wpvivid_staging'.DIRECTORY_SEPARATOR.'.htaccess', 'x');
             if($tempfile)
             {
-                $text="deny from all";
+                //$text="deny from all";
+                $text="<IfModule mod_rewrite.c>\r\nRewriteEngine On\r\nRewriteRule .* - [F,L]\r\n</IfModule>";
                 fwrite($tempfile,$text );
             }
         }
@@ -180,7 +181,8 @@ class WPvivid_Staging_error_log_free
             $tempfile=@fopen($dir.DIRECTORY_SEPARATOR.'error'.'/.htaccess', 'x');
             if($tempfile)
             {
-                $text="deny from all";
+                //$text="deny from all";
+                $text="<IfModule mod_rewrite.c>\r\nRewriteEngine On\r\nRewriteRule .* - [F,L]\r\n</IfModule>";
                 fwrite($tempfile,$text );
                 @fclose($tempfile);
             }
@@ -211,7 +213,8 @@ class WPvivid_Staging_error_log_free
             $tempfile=@fopen($dir.DIRECTORY_SEPARATOR.'wpvivid_log'.DIRECTORY_SEPARATOR.'error'.'/.htaccess', 'x');
             if($tempfile)
             {
-                $text="deny from all";
+                //$text="deny from all";
+                $text="<IfModule mod_rewrite.c>\r\nRewriteEngine On\r\nRewriteRule .* - [F,L]\r\n</IfModule>";
                 fwrite($tempfile,$text );
                 @fclose($tempfile);
             }

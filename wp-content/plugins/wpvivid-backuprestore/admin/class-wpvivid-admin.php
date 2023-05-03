@@ -73,6 +73,7 @@ class WPvivid_Admin {
         add_filter('wpvivid_add_log_tab_page', array($this, 'add_log_tab_page'), 10);
 
         add_action('admin_notices', array($this, 'check_wpvivid_pro_version'));
+        add_action('admin_notices', array($this, 'check_wpvivid_free_htaccess_rule'));
 
         $this->plugin_name = $plugin_name;
         $this->version = $version;
@@ -156,6 +157,13 @@ class WPvivid_Admin {
                     <span style="margin: 0; padding: 0"><a href="https://wordpress.org/plugins/wpvivid-backuprestore/#developers" target="_blank" style="text-decoration: none;"><?php _e('ChangeLog', 'wpvivid-backuprestore'); ?></a></span>
                 </div>
                 <div style="clear: both;"></div>
+            </h2>
+        </div>
+        <div class="postbox">
+            <h2>
+                <?php
+                    _e('Like the plugin? A <a href="https://wordpress.org/support/plugin/wpvivid-backuprestore/reviews/?filter=5#new-post" target="_blank" style="color: #ffba00;" ">&#9733;&#9733;&#9733;&#9733;&#9733;</a> review will motivate us a lot.', 'wpvivid-backuprestore');
+                ?>
             </h2>
         </div>
         <div id="wpvivid_backup_schedule_part"></div>
@@ -294,33 +302,80 @@ class WPvivid_Admin {
          *        Administration Menus: http://codex.wordpress.org/Administration_Menus
          *
          */
-        $menu['page_title']= 'WPvivid Backup';
-        $menu['menu_title']= 'WPvivid Backup';
-        $menu['capability']='administrator';
-        $menu['menu_slug']= $this->plugin_name;
-        $menu['function']=array($this, 'display_plugin_setup_page');
-        $menu['icon_url']='dashicons-cloud';
-        $menu['position']=100;
-        $menu = apply_filters('wpvivid_get_main_admin_menus', $menu);
-        add_menu_page( $menu['page_title'],$menu['menu_title'], $menu['capability'], $menu['menu_slug'], $menu['function'], $menu['icon_url'], $menu['position']);
-        $this->submenus = apply_filters('wpvivid_get_admin_menus', $this->submenus);
-        usort($this->submenus, function ($a, $b) {
-            if ($a['index'] == $b['index'])
-                return 0;
 
-            if ($a['index'] > $b['index'])
-                return 1;
-            else
-                return -1;
-        });
-        foreach ($this->submenus as $submenu) {
-            add_submenu_page(
-                $submenu['parent_slug'],
-                $submenu['page_title'],
-                $submenu['menu_title'],
-                $submenu['capability'],
-                $submenu['menu_slug'],
-                $submenu['function']);
+        if(!is_multisite())
+        {
+            $active_plugins = get_option('active_plugins');
+        }
+        else
+        {
+            $active_plugins = array();
+            //network active
+            $mu_active_plugins = get_site_option( 'active_sitewide_plugins', array() );
+            if(!empty($mu_active_plugins)){
+                foreach ($mu_active_plugins as $plugin_name => $data){
+                    $active_plugins[] = $plugin_name;
+                }
+            }
+        }
+        if(!function_exists('get_plugins'))
+            require_once(ABSPATH . 'wp-admin/includes/plugin.php');
+        $plugins=get_plugins();
+        $pro_wpvivid_slug='wpvivid-backup-pro/wpvivid-backup-pro.php';
+        $is_active_pro=false;
+        if(!empty($plugins))
+        {
+            if(isset($plugins[$pro_wpvivid_slug]))
+            {
+                if(in_array($pro_wpvivid_slug, $active_plugins))
+                {
+                    $is_active_pro=true;
+                }
+            }
+        }
+
+        if(is_multisite() && !$is_active_pro)
+        {
+            $menu['page_title']= 'WPvivid Backup';
+            $menu['menu_title']= 'WPvivid Backup';
+            $menu['capability']='administrator';
+            $menu['menu_slug']= $this->plugin_name;
+            $menu['function']=array($this, 'display_plugin_setup_page_mu');
+            $menu['icon_url']='dashicons-cloud';
+            $menu['position']=100;
+            $menu = apply_filters('wpvivid_get_main_admin_menus', $menu);
+            add_menu_page( $menu['page_title'],$menu['menu_title'], $menu['capability'], $menu['menu_slug'], $menu['function'], $menu['icon_url'], $menu['position']);
+        }
+        else
+        {
+            $menu['page_title']= 'WPvivid Backup';
+            $menu['menu_title']= 'WPvivid Backup';
+            $menu['capability']='administrator';
+            $menu['menu_slug']= $this->plugin_name;
+            $menu['function']=array($this, 'display_plugin_setup_page');
+            $menu['icon_url']='dashicons-cloud';
+            $menu['position']=100;
+            $menu = apply_filters('wpvivid_get_main_admin_menus', $menu);
+            add_menu_page( $menu['page_title'],$menu['menu_title'], $menu['capability'], $menu['menu_slug'], $menu['function'], $menu['icon_url'], $menu['position']);
+            $this->submenus = apply_filters('wpvivid_get_admin_menus', $this->submenus);
+            usort($this->submenus, function ($a, $b) {
+                if ($a['index'] == $b['index'])
+                    return 0;
+
+                if ($a['index'] > $b['index'])
+                    return 1;
+                else
+                    return -1;
+            });
+            foreach ($this->submenus as $submenu) {
+                add_submenu_page(
+                    $submenu['parent_slug'],
+                    $submenu['page_title'],
+                    $submenu['menu_title'],
+                    $submenu['capability'],
+                    $submenu['menu_slug'],
+                    $submenu['function']);
+            }
         }
     }
 
@@ -328,7 +383,36 @@ class WPvivid_Admin {
     {
         if (is_multisite())
         {
+            $active_plugins = array();
+            //network active
+            $mu_active_plugins = get_site_option( 'active_sitewide_plugins', array() );
+            if(!empty($mu_active_plugins)){
+                foreach ($mu_active_plugins as $plugin_name => $data){
+                    $active_plugins[] = $plugin_name;
+                }
+            }
+
+            if(!function_exists('get_plugins'))
+                require_once(ABSPATH . 'wp-admin/includes/plugin.php');
+            $plugins=get_plugins();
+            $pro_wpvivid_slug='wpvivid-backup-pro/wpvivid-backup-pro.php';
+            $is_active_pro=false;
+            if(!empty($plugins))
+            {
+                if(isset($plugins[$pro_wpvivid_slug]))
+                {
+                    if(in_array($pro_wpvivid_slug, $active_plugins))
+                    {
+                        $is_active_pro=true;
+                    }
+                }
+            }
+
             if(!is_network_admin())
+            {
+                return ;
+            }
+            if(!$is_active_pro)
             {
                 return ;
             }
@@ -462,6 +546,15 @@ class WPvivid_Admin {
         add_action('wpvivid_display_page',array($this,'display'));
 
         do_action('wpvivid_display_page');
+    }
+
+    public function display_plugin_setup_page_mu()
+    {
+        ?>
+        <div class="notice notice-info" style="margin: 10px; padding: 10px;">
+            <span>The free version of WPvivid Backup Plugin does not support WordPress Multisite. You can consider upgrading to the <a href="https://wpvivid.com/pricing">pro version</a> as needed.</span>
+        </div>
+        <?php
     }
 
     public function migrate_notice()
@@ -826,6 +919,57 @@ class WPvivid_Admin {
                     }
                 }
             }
+        }
+    }
+
+    public function check_wpvivid_free_htaccess_rule()
+    {
+        $is_check = get_option('wpvivid_check_htaccess_rule_free', false);
+        if(!$is_check)
+        {
+            $dir = WPvivid_Setting::get_option('wpvivid_local_setting');
+            if (!isset($dir['path']))
+            {
+                $dir = WPvivid_Setting::set_default_local_option();
+            }
+
+            $wpvivid_backup_dir_htaccess = WP_CONTENT_DIR.DIRECTORY_SEPARATOR.$dir['path'].DIRECTORY_SEPARATOR.'.htaccess';
+            $wpvivid_backup_log_htaccess = WP_CONTENT_DIR.DIRECTORY_SEPARATOR.$dir['path'].DIRECTORY_SEPARATOR.'wpvivid_log'.DIRECTORY_SEPARATOR.'.htaccess';
+            $wpvivid_backup_error_log_htaccess = WP_CONTENT_DIR.DIRECTORY_SEPARATOR.$dir['path'].DIRECTORY_SEPARATOR.'wpvivid_log'.DIRECTORY_SEPARATOR.'error'.'/.htaccess';
+            $wpvivid_staging_dir_htaccess = WP_CONTENT_DIR.DIRECTORY_SEPARATOR.'wpvivid_staging'.DIRECTORY_SEPARATOR.'.htaccess';
+            $wpvivid_staging_error_log_htaccess = WP_CONTENT_DIR.DIRECTORY_SEPARATOR.'wpvivid_staging'.DIRECTORY_SEPARATOR.'error'.'/.htaccess';
+
+            if(file_exists($wpvivid_backup_dir_htaccess))
+            {
+                unlink($wpvivid_backup_dir_htaccess);
+                WPvivid_Setting::wpvivid_write_htaccess_rule($wpvivid_backup_dir_htaccess);
+            }
+
+            if(file_exists($wpvivid_backup_log_htaccess))
+            {
+                unlink($wpvivid_backup_log_htaccess);
+                WPvivid_Setting::wpvivid_write_htaccess_rule($wpvivid_backup_log_htaccess);
+            }
+
+            if(file_exists($wpvivid_backup_error_log_htaccess))
+            {
+                unlink($wpvivid_backup_error_log_htaccess);
+                WPvivid_Setting::wpvivid_write_htaccess_rule($wpvivid_backup_error_log_htaccess);
+            }
+
+            if(file_exists($wpvivid_staging_dir_htaccess))
+            {
+                unlink($wpvivid_staging_dir_htaccess);
+                WPvivid_Setting::wpvivid_write_htaccess_rule($wpvivid_staging_dir_htaccess);
+            }
+
+            if(file_exists($wpvivid_staging_error_log_htaccess))
+            {
+                unlink($wpvivid_staging_error_log_htaccess);
+                WPvivid_Setting::wpvivid_write_htaccess_rule($wpvivid_staging_error_log_htaccess);
+            }
+
+            update_option('wpvivid_check_htaccess_rule_free', true);
         }
     }
 
@@ -1512,9 +1656,9 @@ class WPvivid_Admin {
                         <p><span style="height: 12px;width: 12px;background-color: #81d742;border-radius: 50%;display: inline-block;"></span></p>
                         <p><span style="height: 12px;width: 12px;background-color: #81d742;border-radius: 50%;display: inline-block;"></span></p>
                         <p><span style="height: 12px;width: 12px;background-color: #81d742;border-radius: 50%;display: inline-block;"></span></p>
-                        <p><span style="height: 12px;width: 12px;background-color: #f1f1f1;border-radius: 50%;display: inline-block;"></span></p>
-                        <p><span style="height: 12px;width: 12px;background-color: #f1f1f1;border-radius: 50%;display: inline-block;"></span></p>
-                        <p><span style="height: 12px;width: 12px;background-color: #f1f1f1;border-radius: 50%;display: inline-block;"></span></p>
+                        <p><span style="height: 12px;width: 12px;background-color: #81d742;border-radius: 50%;display: inline-block;"></span></p>
+                        <p><span style="height: 12px;width: 12px;background-color: #81d742;border-radius: 50%;display: inline-block;"></span></p>
+                        <p><span style="height: 12px;width: 12px;background-color: #81d742;border-radius: 50%;display: inline-block;"></span></p>
                     </td>
                     <td style="text-align:center;">
                         <p><span style="color: #81d742;"><?php _e('Up to 10 domains', 'wpvivid-backuprestore'); ?></span></p>
@@ -1535,7 +1679,7 @@ class WPvivid_Admin {
                         <p><span style="height: 12px;width: 12px;background-color: #81d742;border-radius: 50%;display: inline-block;"></span></p>
                     </td>
                     <td style="text-align:center;">
-                        <p><span style="color: #81d742;"><?php _e('Unlimited', 'wpvivid-backuprestore'); ?></span></p>
+                        <p><span style="color: #81d742;"><?php _e('Unlimited domains', 'wpvivid-backuprestore'); ?></span></p>
                         <p><span style="height: 12px;width: 12px;background-color: #81d742;border-radius: 50%;display: inline-block;"></span></p>
                         <p><span style="height: 12px;width: 12px;background-color: #81d742;border-radius: 50%;display: inline-block;"></span></p>
                         <p><span style="height: 12px;width: 12px;background-color: #81d742;border-radius: 50%;display: inline-block;"></span></p>
@@ -1547,8 +1691,7 @@ class WPvivid_Admin {
                 </tbody>
                 <tfoot>
                 <tr>
-                    <th><?php _e('*No credit card needed. Trial starts with the Free Trial plan with 2 sites. You can choose a plan at the end of the trial.', 'wpvivid-backuprestore'); ?></th>
-                    <th colspan="4" style="text-align:center;"><p style="margin-top: 6px;"><a href="https://wpvivid.com/pricing" class="page-title-action"><?php _e('START 14-DAY FREE TRIAL', 'wpvivid-backuprestore'); ?></a></p></th>
+                    <th colspan="5" style="text-align:center;"><p style="margin-top: 6px;"><a href="https://wpvivid.com/pricing" class="page-title-action"><?php _e('See Plans', 'wpvivid-backuprestore'); ?></a></p></th>
                 </tr>
                 </tfoot>
             </table>

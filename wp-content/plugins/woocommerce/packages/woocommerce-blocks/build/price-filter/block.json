@@ -1,8 +1,8 @@
 {
 	"name": "woocommerce/price-filter",
 	"version": "1.0.0",
-	"title": "Filter by Price",
-	"description": "Allow customers to filter products by price range.",
+	"title": "Filter by Price Controls",
+	"description": "Enable customers to filter the product grid by choosing a price range.",
 	"category": "woocommerce",
 	"keywords": [ "WooCommerce" ],
 	"supports": {
@@ -11,12 +11,9 @@
 		"color": {
 			"text": true,
 			"background": false
-		}
-	},
-	"example": {
-		"attributes": {
-			"isPreview": true
-		}
+		},
+		"inserter": false,
+		"lock": false
 	},
 	"attributes": {
 		"className": {
@@ -29,7 +26,7 @@
 		},
 		"inlineInput": {
 			"type": "boolean",
-			"default": true
+			"default": false
 		},
 		"showFilterButton": {
 			"type": "boolean",

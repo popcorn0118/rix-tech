@@ -174,7 +174,8 @@ class WPvivid_Setting
             $tempfile=@fopen(WP_CONTENT_DIR.DIRECTORY_SEPARATOR.$dir['path'].DIRECTORY_SEPARATOR.'.htaccess', 'x');
             if($tempfile)
             {
-                $text="deny from all";
+                //$text="deny from all";
+                $text="<IfModule mod_rewrite.c>\r\nRewriteEngine On\r\nRewriteRule .* - [F,L]\r\n</IfModule>";
                 fwrite($tempfile,$text );
                 fclose($tempfile);
             }
@@ -208,7 +209,46 @@ class WPvivid_Setting
         $tempfile=@fopen(WP_CONTENT_DIR.DIRECTORY_SEPARATOR.$dir['path'].'/.htaccess', 'x');
         if($tempfile)
         {
-            $text="deny from all";
+            //$text="deny from all";
+            $text="<IfModule mod_rewrite.c>\r\nRewriteEngine On\r\nRewriteRule .* - [F,L]\r\n</IfModule>";
+            fwrite($tempfile,$text );
+            fclose($tempfile);
+        }
+    }
+
+    public static function wpvivid_remove_directory($directory)
+    {
+        if(file_exists($directory))
+        {
+            if($dir_handle=@opendir($directory))
+            {
+                while($filename=readdir($dir_handle))
+                {
+                    if($filename!='.' && $filename!='..')
+                    {
+                        $subFile=$directory."/".$filename;
+                        if(is_dir($subFile))
+                        {
+                            self::wpvivid_remove_directory($subFile);
+                        }
+                        if(is_file($subFile))
+                        {
+                            unlink($subFile);
+                        }
+                    }
+                }
+                closedir($dir_handle);
+                rmdir($directory);
+            }
+        }
+    }
+
+    public static function wpvivid_write_htaccess_rule($wpvivid_backup_dir_htaccess)
+    {
+        $tempfile=@fopen($wpvivid_backup_dir_htaccess, 'x');
+        if($tempfile)
+        {
+            $text="<IfModule mod_rewrite.c>\r\nRewriteEngine On\r\nRewriteRule .* - [F,L]\r\n</IfModule>";
             fwrite($tempfile,$text );
             fclose($tempfile);
         }

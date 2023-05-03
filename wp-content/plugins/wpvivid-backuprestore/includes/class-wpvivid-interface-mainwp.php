@@ -98,32 +98,71 @@ class WPvivid_Interface_MainWP
 
     public function wpvivid_prepare_backup_mainwp($data){
         $backup_options = $data['backup'];
+
         global $wpvivid_plugin;
-        if(isset($backup_options)&&!empty($backup_options)){
-            if (is_null($backup_options)) {
+        if(isset($backup_options)&&!empty($backup_options))
+        {
+            if (is_null($backup_options))
+            {
                 $ret['error']='Invalid parameter param:'.$backup_options;
                 return $ret;
             }
-            $backup_options = apply_filters('wpvivid_custom_backup_options', $backup_options);
 
             if(!isset($backup_options['type']))
             {
                 $backup_options['type']='Manual';
-                $backup_options['action']='backup';
             }
-            $ret = $wpvivid_plugin->check_backup_option($backup_options, $backup_options['type']);
-            if($ret['result']!='success') {
+
+            if(!isset($backup_options['backup_files'])||empty($backup_options['backup_files']))
+            {
+                $ret['result']='failed';
+                $ret['error']=__('A backup type is required.', 'wpvivid-backuprestore');
                 return $ret;
             }
-            $ret=$wpvivid_plugin->pre_backup($backup_options);
-            if($ret['result']=='success') {
-                //Check the website data to be backed up
-                $ret['check']=$wpvivid_plugin->check_backup($ret['task_id'],$backup_options);
-                if(isset($ret['check']['result']) && $ret['check']['result'] == 'failed') {
-                    $ret['error']=$ret['check']['error'];
+
+            if(!isset($backup_options['local'])||!isset($backup_options['remote']))
+            {
+                $ret['result']='failed';
+                $ret['error']=__('Choose at least one storage location for backups.', 'wpvivid-backuprestore');
+                return $ret;
+            }
+
+            if(empty($backup_options['local']) && empty($backup_options['remote']))
+            {
+                $ret['result']='failed';
+                $ret['error']=__('Choose at least one storage location for backups.', 'wpvivid-backuprestore');
+                return $ret;
+            }
+
+            if ($backup_options['remote'] === '1')
+            {
+                $remote_storage = WPvivid_Setting::get_remote_options();
+                if ($remote_storage == false)
+                {
+                    $ret['result']='failed';
+                    $ret['error'] = __('There is no default remote storage configured. Please set it up first.', 'wpvivid-backuprestore');
                     return $ret;
                 }
             }
+
+            if(apply_filters('wpvivid_need_clean_oldest_backup',true,$backup_options))
+            {
+                $wpvivid_plugin->clean_oldest_backup();
+            }
+            do_action('wpvivid_clean_oldest_backup',$backup_options);
+
+            if($wpvivid_plugin->backup2->is_tasks_backup_running())
+            {
+                $ret['result']='failed';
+                $ret['error']=__('A task is already running. Please wait until the running task is complete, and try again.', 'wpvivid-backuprestore');
+                echo json_encode($ret);
+                die();
+            }
+
+            $settings=$wpvivid_plugin->backup2->get_backup_settings($backup_options);
+
+            $backup=new WPvivid_Backup_Task_2();
+            $ret=$backup->new_backup_task($backup_options,$settings);
         }
         else{
             $ret['error']='Error occurred while parsing the request data. Please try to run backup again.';
@@ -133,39 +172,87 @@ class WPvivid_Interface_MainWP
     }
 
     public function wpvivid_backup_now_mainwp($data){
-        $task_id = $data['task_id'];
         global $wpvivid_plugin;
-        if (!isset($task_id)||empty($task_id)||!is_string($task_id))
-        {
-            $ret['error']=__('Error occurred while parsing the request data. Please try to run backup again.', 'wpvivid-backuprestore');
+        try{
+            $task_id = $data['task_id'];
+            $task_id=sanitize_key($task_id);
+            if (!isset($task_id)||empty($task_id)||!is_string($task_id))
+            {
+                $ret['result'] = 'failed';
+                $ret['error']=__('Error occurred while parsing the request data. Please try to run backup again.', 'wpvivid-backuprestore');
+                return $ret;
+            }
+
+            if ($wpvivid_plugin->backup2->is_tasks_backup_running($task_id))
+            {
+                $ret['result'] = 'failed';
+                $ret['error'] = __('We detected that there is already a running backup task. Please wait until it completes then try again.', 'wpvivid-backuprestore');
+                return $ret;
+            }
+
+            $wpvivid_plugin->backup2->update_backup_task_status($task_id,true,'running');
+            $wpvivid_plugin->flush($task_id, true);
+            $wpvivid_plugin->backup2->add_monitor_event($task_id);
+            $wpvivid_plugin->backup2->task=new WPvivid_Backup_Task_2($task_id);
+            $wpvivid_plugin->backup2->task->set_memory_limit();
+            $wpvivid_plugin->backup2->task->set_time_limit();
+
+            $wpvivid_plugin->wpvivid_log->OpenLogFile($wpvivid_plugin->backup2->task->task['options']['log_file_name']);
+            $wpvivid_plugin->wpvivid_log->WriteLog('Start backing up.','notice');
+            $wpvivid_plugin->wpvivid_log->WriteLogHander();
+
+            if(!$wpvivid_plugin->backup2->task->is_backup_finished())
+            {
+                $ret=$wpvivid_plugin->backup2->backup();
+                $wpvivid_plugin->backup2->task->clear_cache();
+                if($ret['result']!='success')
+                {
+                    $wpvivid_plugin->wpvivid_log->WriteLog('Backup the file ends with an error '. $ret['error'],'error');
+                    $wpvivid_plugin->backup2->task->update_backup_task_status(false,'error',false,false,$ret['error']);
+                    do_action('wpvivid_handle_backup_2_failed', $task_id);
+                    $wpvivid_plugin->backup2->clear_monitor_schedule($task_id);
+                    $ret['result'] = 'failed';
+                    $ret['error']='Backup the file ends with an error '. $ret['error'];
+                    return $ret;
+                }
+            }
+
+            if($wpvivid_plugin->backup2->task->need_upload())
+            {
+                $ret=$wpvivid_plugin->backup2->upload($task_id);
+                if($ret['result'] == WPVIVID_SUCCESS)
+                {
+                    do_action('wpvivid_handle_backup_2_succeed',$task_id);
+                    $wpvivid_plugin->backup2->update_backup_task_status($task_id,false,'completed');
+                }
+                else
+                {
+                    $wpvivid_plugin->wpvivid_log->WriteLog('Uploading the file ends with an error '. $ret['error'], 'error');
+                    do_action('wpvivid_handle_backup_2_failed',$task_id);
+                }
+            }
+            else
+            {
+                $wpvivid_plugin->wpvivid_log->WriteLog('Backup completed.','notice');
+                do_action('wpvivid_handle_backup_2_succeed', $task_id);
+                $wpvivid_plugin->backup2->update_backup_task_status($task_id,false,'completed');
+            }
+            $wpvivid_plugin->backup2->clear_monitor_schedule($task_id);
+            $ret['result']='success';
             return $ret;
         }
-        $task_id=sanitize_key($task_id);
-        /*$ret['result']='success';
-        $txt = '<mainwp>' . base64_encode( serialize( $ret ) ) . '</mainwp>';
-        // Close browser connection so that it can resume AJAX polling
-        if(!headers_sent()) {
-            header('Content-Length: ' . ((!empty($txt)) ? strlen($txt) : '0'));
-            header('Connection: close');
-            header('Content-Encoding: none');
+        catch (Exception $error)
+        {
+            //catch error and stop task recording history
+            $message = 'An exception has occurred. class:'.get_class($error).';msg:'.$error->getMessage().';code:'.$error->getCode().';line:'.$error->getLine().';in_file:'.$error->getFile().';';
+            error_log($message);
+            WPvivid_taskmanager::update_backup_task_status($task_id,false,'error',false,false,$message);
+            $wpvivid_plugin->wpvivid_log->WriteLog($message,'error');
+            do_action('wpvivid_handle_backup_2_failed',$task_id);
+            $ret['result'] = 'failed';
+            $ret['error']=$message;
+            return $ret;
         }
-        if ( session_id() ) {
-            session_write_close();
-        }
-        echo $txt;
-        // These two added - 19-Feb-15 - started being required on local dev machine, for unknown reason (probably some plugin that started an output buffer).
-        $ob_level = ob_get_level();
-        while ($ob_level > 0) {
-            ob_end_flush();
-            $ob_level--;
-        }
-        flush();
-        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();*/
-
-        $wpvivid_plugin->flush($task_id, true);
-        //Start backup site
-        $wpvivid_plugin->backup($task_id);
-        $ret['result']='success';
     }
 
     public function wpvivid_view_backup_task_log_mainwp($data){
@@ -510,6 +597,17 @@ class WPvivid_Interface_MainWP
                     $ret['error']='bad parameter';
                     return $ret;
                 }
+
+                if(isset($setting['wpvivid_compress_setting']['max_file_size']))
+                {
+                    $setting['wpvivid_common_setting']['max_file_size'] = str_replace('M', '', $setting['wpvivid_compress_setting']['max_file_size']);
+                }
+
+                if(isset($setting['wpvivid_compress_setting']['exclude_file_size']))
+                {
+                    $setting['wpvivid_common_setting']['exclude_file_size'] = $setting['wpvivid_compress_setting']['exclude_file_size'];
+                }
+
                 WPvivid_Setting::update_setting($setting);
             }
 

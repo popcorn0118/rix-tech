@@ -244,14 +244,14 @@ foreach ($page_array as $page_name){
     jQuery(document).ready(function ()
     {
         wpvivid_getrequest();
-        wpvivid_task_monitor();
+        //wpvivid_task_monitor();
         <?php
         $default_task_type = array();
         $default_task_type = apply_filters('wpvivid_get_task_type', $default_task_type);
         if(empty($default_task_type)){
         ?>
-        wpvivid_activate_cron();
-        wpvivid_manage_task();
+        //wpvivid_activate_cron();
+        //wpvivid_manage_task();
         <?php
         }
         ?>

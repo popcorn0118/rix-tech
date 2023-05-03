@@ -411,16 +411,38 @@ function wpvivid_add_backup_type($html, $type_name)
     return $html;
 }
 
-function wpvivid_backup_do_js(){
+function wpvivid_backup_do_js()
+{
     global $wpvivid_plugin;
-    $backup_task = array();
-    $backup_task=$wpvivid_plugin->_list_tasks($backup_task, false);
+    $backup_task=$wpvivid_plugin->backup2->_list_tasks_ex();
     $general_setting=WPvivid_Setting::get_setting(true, "");
-    if($general_setting['options']['wpvivid_common_setting']['estimate_backup'] == 0){
+
+    if( (isset($general_setting['options']['wpvivid_common_setting']['estimate_backup'])) &&($general_setting['options']['wpvivid_common_setting']['estimate_backup'] == 0) )
+    {
         ?>
         jQuery('#wpvivid_estimate_backup_info').hide();
         <?php
     }
+
+    if($backup_task['progress_html']===false)
+    {
+        ?>
+
+        jQuery('#wpvivid_postbox_backup_percent').hide();
+        jQuery('#wpvivid_backup_cancel_btn').css({'pointer-events': 'auto', 'opacity': '1'});
+        jQuery('#wpvivid_quickbackup_btn').css({'pointer-events': 'auto', 'opacity': '1'});
+        <?php
+    }
+    else
+    {
+        ?>
+        var string = '<?php echo $backup_task['progress_html']; ?>';
+        jQuery('#wpvivid_postbox_backup_percent').show();
+        jQuery('#wpvivid_postbox_backup_percent').html(string);
+        <?php
+    }
+
+    /*
     if(empty($backup_task['backup']['data'])){
         ?>
         jQuery('#wpvivid_postbox_backup_percent').hide();
@@ -469,7 +491,7 @@ function wpvivid_backup_do_js(){
                 }
             }
         }
-    }
+    }*/
 }
 
 function wpvivid_download_backup_descript($html){
@@ -900,7 +922,7 @@ function wpvivid_backuppage_add_page_backup(){
             jQuery("#"+backup_id+"-text-part-"+part_num).html("<a>Retriving(remote storage to web server)</a>");
             jQuery("#"+backup_id+"-progress-part-"+part_num).css('width', progress);
             task_retry_times = 0;
-            m_need_update = true;
+            m_need_update_2 = true;
             wpvivid_lock_download(backup_id);
             m_downloading_id = backup_id;
             tmp_current_click_backupid = backup_id;
@@ -982,15 +1004,24 @@ function wpvivid_backuppage_add_page_backup(){
             jQuery('#wpvivid_download_'+restore_method+'part').hide();
 
             jQuery('#wpvivid_init_restore_data').addClass('is-active');
+
+            jQuery('#wpvivid_restore_progress').hide();
+            jQuery('#wpvivid_restore_log').show();
+            jQuery('#wpvivid_restore_box').show();
+            jQuery('#wpvivid_restore_success').hide();
+            jQuery('#wpvivid_restore_failed').hide();
             var ajax_data = {
                 'action':'wpvivid_init_restore_page',
                 'backup_id':m_restore_backup_id
             };
-            wpvivid_post_request(ajax_data, function(data){
-                try {
+            wpvivid_post_request(ajax_data, function(data)
+            {
+                try
+                {
                     var jsonarray = jQuery.parseJSON(data);
                     var init_status = false;
-                    if(jsonarray.result === 'success') {
+                    if(jsonarray.result === 'success')
+                    {
                         jQuery('#wpvivid_restore_'+restore_method+'btn').css({'pointer-events': 'auto', 'opacity': '1'});
                         jQuery('#wpvivid_download_'+restore_method+'btn').css({'pointer-events': 'none', 'opacity': '0.4'});
                         jQuery('#wpvivid_restore_'+restore_method+'part').show();
@@ -998,7 +1029,8 @@ function wpvivid_backuppage_add_page_backup(){
                         wpvivid_restore_need_download = false;
                         init_status = true;
                     }
-                    else if (jsonarray.result === "need_download"){
+                    else if (jsonarray.result === "need_download")
+                    {
                         init_status = true;
                         wpvivid_restore_download_array = new Array();
                         var download_num = 0;
@@ -1046,43 +1078,31 @@ function wpvivid_backuppage_add_page_backup(){
                             }
                         }
                         jQuery('#wpvivid_init_restore_data').removeClass('is-active');
-                        if (jsonarray.has_exist_restore === 0) {
-                            if(wpvivid_restore_need_download == false) {
-                                jQuery('#wpvivid_restore_' + restore_method + 'btn').css({'pointer-events': 'auto', 'opacity': '1'});
-                                jQuery('#wpvivid_clean_' + restore_method + 'restore').css({'pointer-events': 'none', 'opacity': '0.4'});
-                                jQuery('#wpvivid_rollback_' + restore_method + 'btn').css({'pointer-events': 'none', 'opacity': '0.4'});
-                                jQuery('#wpvivid_restore_' + restore_method + 'part').show();
-                                jQuery('#wpvivid_clean_' + restore_method + 'part').hide();
-                                jQuery('#wpvivid_rollback_' + restore_method + 'part').hide();
-                                jQuery('#wpvivid_restore_is_migrate').css({'pointer-events': 'auto', 'opacity': '1'});
+                        if(wpvivid_restore_need_download == false) {
+                            jQuery('#wpvivid_restore_' + restore_method + 'btn').css({'pointer-events': 'auto', 'opacity': '1'});
+                            jQuery('#wpvivid_clean_' + restore_method + 'restore').css({'pointer-events': 'none', 'opacity': '0.4'});
+                            jQuery('#wpvivid_rollback_' + restore_method + 'btn').css({'pointer-events': 'none', 'opacity': '0.4'});
+                            jQuery('#wpvivid_restore_' + restore_method + 'part').show();
+                            jQuery('#wpvivid_clean_' + restore_method + 'part').hide();
+                            jQuery('#wpvivid_rollback_' + restore_method + 'part').hide();
+                            jQuery('#wpvivid_restore_is_migrate').css({'pointer-events': 'auto', 'opacity': '1'});
 
+                            jQuery('#wpvivid_restore_is_migrate').hide();
+                            jQuery('#wpvivid_restore_' + restore_method + 'btn').css({'pointer-events': 'auto', 'opacity': '1'});
+
+                            wpvivid_resotre_is_migrate = jsonarray.is_migrate;
+
+                            if (jsonarray.is_migrate_ui === 1) {
+                                jQuery('#wpvivid_restore_is_migrate').show();
+                                jQuery('#wpvivid_replace_domain').prop('checked', false);
+                                jQuery('#wpvivid_keep_domain').prop('checked', false);
+                            }
+                            else {
                                 jQuery('#wpvivid_restore_is_migrate').hide();
                                 jQuery('#wpvivid_restore_' + restore_method + 'btn').css({'pointer-events': 'auto', 'opacity': '1'});
-
-                                wpvivid_resotre_is_migrate = jsonarray.is_migrate;
-
-                                if (jsonarray.is_migrate_ui === 1) {
-                                    jQuery('#wpvivid_restore_is_migrate').show()
-                                    jQuery('#wpvivid_replace_domain').prop('checked', false);
-                                    jQuery('#wpvivid_keep_domain').prop('checked', false);
-                                }
-                                else {
-                                    jQuery('#wpvivid_restore_is_migrate').hide();
-                                    jQuery('#wpvivid_restore_' + restore_method + 'btn').css({'pointer-events': 'auto', 'opacity': '1'});
-                                }
-
-                                wpvivid_interface_flow_control();
                             }
-                        }
-                        else if (jsonarray.has_exist_restore === 1) {
-                            jQuery('#wpvivid_restore_' + restore_method + 'btn').css({'pointer-events': 'none', 'opacity': '0.4'});
-                            jQuery('#wpvivid_clean_' + restore_method + 'restore').css({'pointer-events': 'auto', 'opacity': '1'});
-                            jQuery('#wpvivid_rollback_' + restore_method + 'btn').css({'pointer-events': 'none', 'opacity': '0.4'});
-                            jQuery('#wpvivid_restore_'+restore_method+'part').hide();
-                            jQuery('#wpvivid_clean_'+restore_method+'part').show();
-                            jQuery('#wpvivid_rollback_'+restore_method+'part').hide();
-                            jQuery('#wpvivid_restore_is_migrate').hide();
-                            wpvivid_display_restore_msg("An uncompleted restore task exists, please terminate it first.", restore_type);
+
+                            wpvivid_interface_flow_control();
                         }
                     }
                 }
@@ -1253,7 +1273,8 @@ function wpvivid_backuppage_add_page_log(){
     <?php
 }
 
-function wpvivid_backuppage_add_page_restore(){
+function wpvivid_backuppage_add_page_restore()
+{
     $general_setting=WPvivid_Setting::get_setting(true, "");
     if(isset($general_setting['options']['wpvivid_common_setting']['restore_max_execution_time'])){
         $restore_max_execution_time = intval($general_setting['options']['wpvivid_common_setting']['restore_max_execution_time']);
@@ -1263,173 +1284,54 @@ function wpvivid_backuppage_add_page_restore(){
     }
     ?>
     <div class="backup-tab-content wpvivid_tab_restore" id="page-restore" style="display:none;">
-        <div>
+        <div id="wpvivid_restore_box">
             <h3><?php _e('Restore backup from:', 'wpvivid-backuprestore'); ?><span id="wpvivid_restore_backup_time"></span></h3>
             <p><strong><?php _e('Please do not close the page or switch to other pages when a restore task is running, as it could trigger some unexpected errors.', 'wpvivid-backuprestore'); ?></strong></p>
             <p><?php _e('Restore function will replace the current site\'s themes, plugins, uploads, database and/or other content directories with the existing equivalents in the selected backup.', 'wpvivid-backuprestore'); ?></p>
-            <div id="wpvivid_restore_is_migrate" style="padding-bottom: 10px; display: none;">
-                <label >
-                    <input type="radio" id="wpvivid_replace_domain" option="restore" name="restore_domain" value="1" /><?php echo sprintf(__('Restore and replace the original domain (URL) with %s (migration)', 'wpvivid-backuprestore'), home_url()); ?>
-                </label><br>
-                <label >
-                    <input type="radio" id="wpvivid_keep_domain" option="restore" name="restore_domain" value="0" /><?php _e('Restore and keep the original domain (URL) unchanged', 'wpvivid-backuprestore'); ?>
-                </label><br>
-            </div>
-            <div>
-                <p><strong><?php _e('Tips:', 'wpvivid-backuprestore'); ?></strong>&nbsp<?php _e('If you are migrating a website, the source domain will be replaced with the target domain automatically. For example, if you are migrating a.com to b.com, then a.com will be replaced with b.com during the restore.', 'wpvivid-backuprestore'); ?></p>
-            </div>
             <div id="wpvivid_restore_check"></div>
             <div class="restore-button-position" id="wpvivid_restore_part"><input class="button-primary" id="wpvivid_restore_btn" type="submit" name="restore" value="<?php esc_attr_e( 'Restore', 'wpvivid-backuprestore' ); ?>" onclick="wpvivid_start_restore();" /></div>
-            <div class="restore-button-position" id="wpvivid_clean_part"><input class="button-primary" id="wpvivid_clean_restore" type="submit" name="clear_restore" value="<?php esc_attr_e( 'Terminate', 'wpvivid-backuprestore' ); ?>" /></div>
-            <div class="restore-button-position" id="wpvivid_rollback_part"><input class="button-primary" id="wpvivid_rollback_btn" type="submit" name="rollback" value="<?php esc_attr_e( 'Rollback', 'wpvivid-backuprestore' ); ?>" /></div>
             <div class="restore-button-position" id="wpvivid_download_part">
                 <input class="button-primary" id="wpvivid_download_btn" type="submit" name="download" value="<?php esc_attr_e( 'Retrieve the backup to localhost', 'wpvivid-backuprestore' ); ?>" />
                 <span><?php _e('The backup is stored on the remote storage, click on the button to download it to localhost.', 'wpvivid-backuprestore'); ?></span>
             </div>
             <div class="spinner" id="wpvivid_init_restore_data" style="float:left;width:auto;height:auto;padding:10px 20px 20px 0;background-position:0 10px;"></div>
         </div>
+        <div style="clear:both;"></div>
+        <div id="wpvivid_restore_progress" style="margin-bottom:1em;margin-top:1em;display: none">
+            <div style="padding-top:1em;border-top:1px solid #cccccc;">
+                <span class="dashicons dashicons-update wpvivid-dashicons-green"></span>
+                <span>Restoring: overall progress</span>
+            </div>
+            <div style="padding: 1em 0;">
+                    <span class="wpvivid-span-progress" id="wpvivid_main_progress">
+                        <span class="wpvivid-span-processed-progress wpvivid-span-processed-percent-progress" style="width: 0%;">0% completed</span>
+                    </span>
+            </div>
+        </div>
         <div class="postbox restore_log" id="wpvivid_restore_log"></div>
+        <div id="wpvivid_restore_success" style="display: none">
+            <div style="font-size:4em; font-weight:900; color:#8bc34a; text-align:center;padding-top:1.5em;">
+                <span>Congratulations !!!</span>
+            </div>
+            <div id="wpvivid_restore_finished_msg" style="width:600px; text-align:center; margin: 5em auto; border-top:5px solid #eaf1fe;border-bottom:5px solid #eaf1fe;">
+            </div>
+        </div>
+        <div id="wpvivid_restore_failed" style="display: none">
+            <div style="font-size:2em; font-weight:900; color:orange; text-align:center;padding-top:1.5em;">
+                <span>Oops, The restoration seems to have encountered a problem:(</span>
+            </div>
+            <div id="wpvivid_restore_failed_msg" style="width:600px; text-align:center; margin: 5em auto; border-top:5px solid #eaf1fe;border-bottom:5px solid #eaf1fe;">
+            </div>
+        </div>
     </div>
     <script>
         var restore_max_exection_time = '<?php echo $restore_max_execution_time; ?>';
         restore_max_exection_time = restore_max_exection_time * 1000;
-        jQuery('#wpvivid_clean_restore').click(function(){
-            wpvivid_delete_incompleted_restore();
-        });
-
-        jQuery('#wpvivid_download_btn').click(function(){
+        var m_restore_type='';
+        jQuery('#wpvivid_download_btn').click(function()
+        {
             wpvivid_download_restore_file('backup');
         });
-
-        function wpvivid_delete_incompleted_restore(restore_type = 'backup'){
-            var restore_method = '';
-            if(restore_type == 'backup'){
-                restore_method = '';
-            }
-            else if(restore_type == 'transfer'){
-                restore_method = 'transfer_';
-            }
-
-            var ajax_data={
-                'action': 'wpvivid_delete_last_restore_data'
-            };
-            jQuery('#wpvivid_restore_'+restore_method+'btn').css({'pointer-events': 'none', 'opacity': '0.4'});
-            jQuery('#wpvivid_clean_'+restore_method+'restore').css({'pointer-events': 'auto', 'opacity': '1'});
-            jQuery('#wpvivid_rollback_'+restore_method+'btn').css({'pointer-events': 'none', 'opacity': '0.4'});
-            jQuery('#wpvivid_restore_'+restore_method+'part').hide();
-            jQuery('#wpvivid_clean_'+restore_method+'part').show();
-            jQuery('#wpvivid_rollback_'+restore_method+'part').hide();
-            wpvivid_post_request(ajax_data, function(data) {
-                try {
-                    var jsonarray = jQuery.parseJSON(data);
-                    if (jsonarray.result === "success") {
-                        wpvivid_display_restore_msg("The restore task is terminated.", restore_type);
-                        wpvivid_init_restore_data(restore_type);
-                    }
-                }
-                catch(err){
-                    alert(err);
-                }
-            }, function(XMLHttpRequest, textStatus, errorThrown) {
-                var error_message = wpvivid_output_ajaxerror('deleting the last incomplete restore task', textStatus, errorThrown);
-                wpvivid_display_restore_msg(error_message, restore_type);
-            });
-        }
-
-        function wpvivid_restore_is_migrate(restore_type){
-            var ajax_data = {
-                'action': 'wpvivid_get_restore_file_is_migrate',
-                'backup_id': m_restore_backup_id
-            };
-            var restore_method = '';
-            wpvivid_post_request(ajax_data, function(data)
-            {
-                try
-                {
-                    var jsonarray = jQuery.parseJSON(data);
-                    if(jsonarray.result === "success")
-                    {
-                        if (jsonarray.is_migrate_ui === 1)
-                        {
-                            jQuery('#wpvivid_restore_is_migrate').show();
-                            jQuery('#wpvivid_replace_domain').prop('checked', false);
-                            jQuery('#wpvivid_keep_domain').prop('checked', false);
-                        }
-                        else {
-                            jQuery('#wpvivid_restore_is_migrate').hide();
-                            jQuery('#wpvivid_restore_' + restore_method + 'btn').css({'pointer-events': 'auto', 'opacity': '1'});
-                        }
-                    }
-                    else if (jsonarray.result === "failed") {
-                        jQuery('#wpvivid_init_restore_data').removeClass('is-active');
-                        wpvivid_display_restore_msg(jsonarray.error, restore_type);
-                    }
-                }
-                catch(err){
-                    alert(err);
-                }
-            }, function(XMLHttpRequest, textStatus, errorThrown)
-            {
-                setTimeout(function()
-                {
-                    wpvivid_restore_is_migrate(restore_type);
-                }, 3000);
-            });
-        }
-
-        /**
-         * This function will start the process of restoring a backup
-         */
-        function wpvivid_start_restore(restore_type = 'backup'){
-            if(!wpvivid_restore_sure){
-                var descript = '<?php esc_html_e('Are you sure to continue?', 'wpvivid-backuprestore'); ?>';
-                var ret = confirm(descript);
-            }
-            else{
-                ret = true;
-            }
-            if (ret === true) {
-                wpvivid_restore_sure = true;
-                var restore_method = '';
-                if (restore_type == 'backup') {
-                    restore_method = '';
-                }
-                else if (restore_type == 'transfer') {
-                    restore_method = 'transfer_';
-                }
-                jQuery('#wpvivid_restore_' + restore_method + 'log').html("");
-                jQuery('#wpvivid_restore_' + restore_method + 'btn').css({'pointer-events': 'none', 'opacity': '0.4'});
-                jQuery('#wpvivid_clean_' + restore_method + 'restore').css({'pointer-events': 'none', 'opacity': '0.4'});
-                jQuery('#wpvivid_rollback_' + restore_method + 'btn').css({'pointer-events': 'none', 'opacity': '0.4'});
-                jQuery('#wpvivid_restore_' + restore_method + 'part').show();
-                jQuery('#wpvivid_clean_' + restore_method + 'part').hide();
-                jQuery('#wpvivid_rollback_' + restore_method + 'part').hide();
-                wpvivid_restore_lock();
-                wpvivid_restoring = true;
-                if (wpvivid_restore_need_download) {
-                    wpvivid_download_restore_file(restore_type);
-                }
-                else {
-                    wpvivid_monitor_restore_task(restore_type);
-                    if(wpvivid_resotre_is_migrate==0)
-                    {
-                        jQuery('input:radio[option=restore]').each(function()
-                        {
-                            if(jQuery(this).prop('checked'))
-                            {
-                                var value = jQuery(this).prop('value');
-                                if(value == '1')
-                                {
-                                    wpvivid_resotre_is_migrate = '1';
-                                }
-                            }
-                        });
-                    }
-
-                    wpvivid_restore(restore_type);
-                }
-            }
-        }
 
         function wpvivid_download_restore_file(restore_type)
         {
@@ -1624,8 +1526,278 @@ function wpvivid_backuppage_add_page_restore(){
         }
 
         /**
+         * This function will start the process of restoring a backup
+         */
+        function wpvivid_start_restore(restore_type = 'backup')
+        {
+            if(!wpvivid_restore_sure){
+                var descript = '<?php esc_html_e('Are you sure to continue?', 'wpvivid-backuprestore'); ?>';
+                var ret = confirm(descript);
+            }
+            else{
+                ret = true;
+            }
+            if (ret === true) {
+                wpvivid_restore_sure = true;
+                var restore_method = '';
+                if (restore_type == 'backup') {
+                    restore_method = '';
+                }
+                else if (restore_type == 'transfer') {
+                    restore_method = 'transfer_';
+                }
+                m_restore_type=restore_method;
+                jQuery('#wpvivid_restore_' + restore_method + 'log').html("");
+                jQuery('#wpvivid_restore_' + restore_method + 'btn').css({'pointer-events': 'none', 'opacity': '0.4'});
+                jQuery('#wpvivid_restore_' + restore_method + 'part').show();
+                jQuery('#wpvivid_restore_progress').show();
+                jQuery('#wpvivid_main_progress').html('<span class="wpvivid-span-processed-progress wpvivid-span-processed-percent-progress" style="width: 0%;">0%</span>');
+                wpvivid_restore_lock();
+                wpvivid_restoring = true;
+                if (wpvivid_restore_need_download)
+                {
+                    wpvivid_download_restore_file(restore_type);
+                }
+                else
+                {
+                    //wpvivid_monitor_restore_task(restore_type);
+                    //if(wpvivid_resotre_is_migrate==0)
+                    //{
+                    //    jQuery('input:radio[option=restore]').each(function()
+                    //    {
+                    //       if(jQuery(this).prop('checked'))
+                    //        {
+                    //            var value = jQuery(this).prop('value');
+                    //            if(value == '1')
+                    //            {
+                    //                wpvivid_resotre_is_migrate = '1';
+                    //            }
+                    //        }
+                    //    });
+                    //}
+                    //wpvivid_restore(restore_type);
+
+                    wpvivid_init_restore();
+                }
+            }
+        }
+
+        function wpvivid_init_restore()
+        {
+            var ajax_data = {
+                'action':'wpvivid_init_restore_task_2',
+                'backup_id': m_restore_backup_id,
+            };
+
+            wpvivid_post_request(ajax_data, function(data)
+            {
+                try
+                {
+                    var jsonarray = jQuery.parseJSON(data);
+
+                    if (jsonarray.result === 'success')
+                    {
+                        wpvivid_do_restore();
+                    }
+                    else
+                    {
+                        jQuery('#wpvivid_restore_'+m_restore_type+'btn').css({'pointer-events': 'none', 'opacity': '0.4'});
+                        jQuery('#wpvivid_download_'+m_restore_type+'btn').css({'pointer-events': 'auto', 'opacity': '1'});
+                        jQuery('#wpvivid_restore_'+m_restore_type+'part').hide();
+                        jQuery('#wpvivid_download_'+m_restore_type+'part').show();
+                        var error_message = jsonarray.error;
+                        wpvivid_restore_unlock();
+                        wpvivid_restoring = false;
+                        alert("<?php esc_html_e('Restore failed.', 'wpvivid-backuprestore'); ?>");
+                        wpvivid_display_restore_msg(error_message,m_restore_type,wpvivid_restore_download_array[wpvivid_restore_download_index]['file_name'],false);
+
+                    }
+                }
+                catch (err)
+                {
+                    alert(err);
+                }
+            }, function(XMLHttpRequest, textStatus, errorThrown)
+            {
+                var error_message = wpvivid_output_ajaxerror('init restore task', textStatus, errorThrown);
+                alert(error_message);
+            });
+        }
+
+        function wpvivid_do_restore()
+        {
+            var ajax_data = {
+                'action':'wpvivid_do_restore_2',
+                'wpvivid_restore':'1'
+            };
+            wpvivid_post_request(ajax_data, function(data)
+            {
+                setTimeout(function(){
+                    wpvivid_get_restore_progress();
+                }, 1000);
+            }, function(XMLHttpRequest, textStatus, errorThrown)
+            {
+                wpvivid_get_restore_progress();
+            });
+        }
+
+        function wpvivid_get_restore_progress()
+        {
+            var ajax_data = {
+                'action':'wpvivid_get_restore_progress_2',
+                'wpvivid_restore':'1'
+            };
+            wpvivid_post_request(ajax_data, function(data)
+            {
+                try
+                {
+                    var jsonarray = jQuery.parseJSON(data);
+
+                    if (jsonarray.result === 'success')
+                    {
+                        wpvivid_output_progress(jsonarray);
+
+                        if(jsonarray.status=='ready')
+                        {
+                            wpvivid_do_restore();
+                        }
+                        else if(jsonarray.status=='sub task finished')
+                        {
+                            wpvivid_do_restore();
+                        }
+                        else if(jsonarray.status=='task finished')
+                        {
+                            wpvivid_finish_restore();
+                        }
+                        else if(jsonarray.status=='doing sub task')
+                        {
+                            setTimeout(function(){
+                                wpvivid_get_restore_progress();
+                            }, 2000);
+                        }
+                        else if(jsonarray.status=='no response')
+                        {
+                            setTimeout(function(){
+                                wpvivid_get_restore_progress();
+                            }, 2000);
+                        }
+                    }
+                    else {
+                        wpvivid_restore_failed();
+                    }
+                }
+                catch (err)
+                {
+                    setTimeout(function(){
+                        wpvivid_get_restore_progress();
+                    }, 2000);
+                }
+            }, function(XMLHttpRequest, textStatus, errorThrown)
+            {
+                setTimeout(function(){
+                    wpvivid_get_restore_progress();
+                }, 2000);
+            });
+        }
+
+        function wpvivid_finish_restore()
+        {
+            var ajax_data = {
+                'action':'wpvivid_finish_restore_2',
+                'wpvivid_restore':'1'
+            };
+            wpvivid_post_request(ajax_data, function(data)
+            {
+                wpvivid_restore_unlock();
+                alert("<?php esc_html_e('Restore completed successfully.', 'wpvivid-backuprestore'); ?>");
+                location.reload();
+
+                //jQuery('#wpvivid_restore_progress').hide();
+                //jQuery('#wpvivid_restore_log').hide();
+                //jQuery('#wpvivid_restore_box').hide();
+                //jQuery('#wpvivid_restore_success').show();
+                //jQuery('#wpvivid_restore_failed').hide();
+                //jQuery('#wpvivid_restore_finished_msg').html(data);
+                //wpvivid_restoring = false;
+            }, function(XMLHttpRequest, textStatus, errorThrown)
+            {
+                wpvivid_restore_unlock();
+                alert("<?php esc_html_e('Restore completed successfully.', 'wpvivid-backuprestore'); ?>");
+                location.reload();
+
+                //jQuery('#wpvivid_restore_progress').hide();
+                //jQuery('#wpvivid_restore_log').hide();
+                //jQuery('#wpvivid_restore_success').show();
+                //jQuery('#wpvivid_restore_failed').hide();
+                //
+                //jQuery('#wpvivid_restore_finished_msg').html(XMLHttpRequest.responseText);
+                //wpvivid_restoring = false;
+                //wpvivid_restore_unlock();
+                //alert("<?php esc_html_e('Restore completed successfully.', 'wpvivid-backuprestore'); ?>");
+                //location.reload();
+            });
+        }
+
+        function wpvivid_restore_failed()
+        {
+            var ajax_data = {
+                'action':'wpvivid_restore_failed_2',
+                'wpvivid_restore':'1'
+            };
+
+            wpvivid_post_request(ajax_data, function(data)
+            {
+                jQuery('#wpvivid_restore_progress').hide();
+                //jQuery('#wpvivid_restore_log').hide();
+                //jQuery('#wpvivid_restore_box').hide();
+                //jQuery('#wpvivid_restore_success').hide();
+                //jQuery('#wpvivid_restore_failed').show();
+                //jQuery('#wpvivid_restore_failed_msg').html(data);
+
+                wpvivid_restore_unlock();
+                wpvivid_restoring = false;
+                jQuery('#wpvivid_restore_' + m_restore_type + 'btn').css({'pointer-events': 'auto', 'opacity': '1'});
+                alert(data);
+
+            }, function(XMLHttpRequest, textStatus, errorThrown)
+            {
+                jQuery('#wpvivid_restore_progress').hide();
+                //jQuery('#wpvivid_restore_log').hide();
+                //jQuery('#wpvivid_restore_box').hide();
+                //jQuery('#wpvivid_restore_success').hide();
+                //jQuery('#wpvivid_restore_failed').show();
+                //jQuery('#wpvivid_restore_failed_msg').html(XMLHttpRequest.responseText);
+
+                wpvivid_restore_unlock();
+                wpvivid_restoring = false;
+                jQuery('#wpvivid_restore_' + m_restore_type + 'btn').css({'pointer-events': 'auto', 'opacity': '1'});
+                alert("<?php esc_html_e('Restore failed.', 'wpvivid-backuprestore'); ?>");
+            });
+        }
+
+        function wpvivid_output_progress(jsonarray)
+        {
+            jQuery('#wpvivid_main_progress').html(jsonarray.main_progress);
+
+            jQuery('#wpvivid_restore_' + m_restore_type + 'log').html("");
+            while (jsonarray.log.indexOf('\n') >= 0)
+            {
+                var iLength = jsonarray.log.indexOf('\n');
+                var log = jsonarray.log.substring(0, iLength);
+                jsonarray.log = jsonarray.log.substring(iLength + 1);
+                var insert_log = "<div style=\"clear:both;\">" + log + "</div>";
+                jQuery('#wpvivid_restore_' + m_restore_type + 'log').append(insert_log);
+                var div = jQuery('#wpvivid_restore_' + m_restore_type + 'log');
+                div[0].scrollTop = div[0].scrollHeight;
+            }
+        }
+
+
+
+        /**
          * Monitor restore task.
          */
+        /*
         function wpvivid_monitor_restore_task(restore_type){
             var restore_method = '';
             if(restore_type == 'backup'){
@@ -1695,14 +1867,14 @@ function wpvivid_backuppage_add_page_restore(){
                                     wpvivid_restoring = false;
                                     wpvivid_restore(restore_type);
                                     wpvivid_restore_unlock();
-                                    alert("<?php esc_html_e('Restore completed successfully.', 'wpvivid-backuprestore'); ?>");
+                                    alert(" //esc_html_e('Restore completed successfully.', 'wpvivid-backuprestore'); ");
                                     location.reload();
                                 }
                                 else if (jsonarray.status === 'error') {
                                     wpvivid_restore_unlock();
                                     wpvivid_restoring = false;
                                     jQuery('#wpvivid_restore_' + restore_method + 'btn').css({'pointer-events': 'auto', 'opacity': '1'});
-                                    alert("<?php esc_html_e('Restore failed.', 'wpvivid-backuprestore'); ?>");
+                                    alert(" //esc_html_e('Restore failed.', 'wpvivid-backuprestore'); ");
                                 }
                                 else {
                                     setTimeout(function () {
@@ -1778,6 +1950,7 @@ function wpvivid_backuppage_add_page_restore(){
             }, function(XMLHttpRequest, textStatus, errorThrown) {
             });
         }
+        */
 
         function wpvivid_display_restore_msg(msg, restore_type, div_id, append = true){
             var restore_method = '';
@@ -2224,23 +2397,61 @@ function wpvivid_backuppage_add_progress_module(){
             }
         });
             
-        function wpvivid_cancel_backup(){
+        function wpvivid_cancel_backup()
+        {
             var ajax_data= {
                 'action': 'wpvivid_backup_cancel'
                 //'task_id': running_backup_taskid
             };
             jQuery('#wpvivid_backup_cancel_btn').css({'pointer-events': 'none', 'opacity': '0.4'});
-            wpvivid_post_request(ajax_data, function(data){
-                try {
+            wpvivid_post_request(ajax_data, function(data)
+            {
+                try
+                {
                     var jsonarray = jQuery.parseJSON(data);
-                    jQuery('#wpvivid_current_doing').html(jsonarray.msg);
+                    if(jsonarray.no_response)
+                    {
+                        var ret = confirm(jsonarray.msg);
+                        if(ret === true)
+                        {
+                            wpvivid_termination_backup_task(jsonarray.task_id);
+                        }
+                    }
+                    else
+                    {
+                        jQuery('#wpvivid_current_doing').html(jsonarray.msg);
+                    }
                 }
-                catch(err){
+                catch(err)
+                {
                     alert(err);
                 }
-            }, function(XMLHttpRequest, textStatus, errorThrown) {
+            }, function(XMLHttpRequest, textStatus, errorThrown)
+            {
                 jQuery('#wpvivid_backup_cancel_btn').css({'pointer-events': 'auto', 'opacity': '1'});
                 var error_message = wpvivid_output_ajaxerror('cancelling the backup', textStatus, errorThrown);
+                wpvivid_add_notice('Backup', 'Error', error_message);
+            });
+        }
+
+        function wpvivid_termination_backup_task(task_id)
+        {
+            var ajax_data= {
+                'action': 'wpvivid_shutdown_backup',
+                'task_id': task_id
+            };
+            wpvivid_post_request(ajax_data, function(data)
+            {
+                try
+                {
+                }
+                catch(err)
+                {
+                    alert(err);
+                }
+            }, function(XMLHttpRequest, textStatus, errorThrown)
+            {
+                var error_message = wpvivid_output_ajaxerror('terminationing the backup', textStatus, errorThrown);
                 wpvivid_add_notice('Backup', 'Error', error_message);
             });
         }
@@ -2326,6 +2537,195 @@ function wpvivid_backup_module_add_exec(){
         </div>
     </div>
     <script>
+
+    var m_need_update_2=false;
+    jQuery(document).ready(function ()
+    {
+        wpvivid_activate_cron_2();
+        m_need_update_2=true;
+        wpvivid_manage_task_2();
+    });
+
+    jQuery(document).ready(function($)
+    {
+        jQuery(document).on('wpvivid_update_local_backup', function(event)
+        {
+            wpvivid_retrieve_backup_list();
+        });
+
+        jQuery(document).on('wpvivid_update_log_list', function(event)
+        {
+            wpvivid_retrieve_log_list();
+        });
+    });
+
+    function wpvivid_activate_cron_2()
+    {
+        var next_get_time = 3 * 60 * 1000;
+        wpvivid_cron_task();
+        setTimeout("wpvivid_activate_cron_2()", next_get_time);
+        setTimeout(function(){
+            m_need_update_2=true;
+        }, 10000);
+    }
+
+    function wpvivid_manage_task_2()
+    {
+        if(m_need_update_2 === true)
+        {
+            m_need_update_2 = false;
+            wpvivid_check_runningtask_2();
+        }
+        else{
+            setTimeout(function()
+            {
+                wpvivid_manage_task_2();
+            }, 3000);
+        }
+    }
+
+    function wpvivid_check_runningtask_2()
+    {
+        var ajax_data = {
+            'action': 'wpvivid_list_tasks_2'
+        };
+
+        wpvivid_post_request(ajax_data, function (data)
+        {
+            setTimeout(function ()
+            {
+                wpvivid_manage_task_2();
+            }, 3000);
+            try
+            {
+                var jsonarray = jQuery.parseJSON(data);
+                wpvivid_list_task_2_data(jsonarray);
+            }
+            catch(err)
+            {
+                alert(err);
+            }
+        }, function (XMLHttpRequest, textStatus, errorThrown)
+        {
+            setTimeout(function ()
+            {
+                m_need_update_2 = true;
+                wpvivid_manage_task_2();
+            }, 3000);
+        });
+    }
+
+    function wpvivid_list_task_2_data(data)
+    {
+        var b_has_data = false;
+
+        if(data.progress_html!==false)
+        {
+            jQuery('#wpvivid_postbox_backup_percent').show();
+            jQuery('#wpvivid_postbox_backup_percent').html(data.progress_html);
+        }
+        else
+        {
+            if(!wpvivid_prepare_backup)
+                jQuery('#wpvivid_postbox_backup_percent').hide();
+        }
+
+        if(data.upload_progress_html!==false)
+        {
+            jQuery('#wpvivid_upload_backup_percent').show();
+            jQuery('#wpvivid_upload_backup_percent').html(data.upload_progress_html);
+        }
+        else
+        {
+            jQuery('#wpvivid_upload_backup_percent').hide();
+        }
+
+
+        var update_backup=false;
+        if (data.success_notice_html !== false)
+        {
+            jQuery('#wpvivid_backup_notice').show();
+            jQuery('#wpvivid_backup_notice').html(data.success_notice_html);
+            update_backup=true;
+        }
+        if(data.error_notice_html !== false)
+        {
+            jQuery('#wpvivid_backup_notice').show();
+            jQuery('#wpvivid_backup_notice').html(data.error_notice_html);
+            update_backup=true;
+        }
+
+        if(update_backup)
+        {
+            jQuery( document ).trigger( 'wpvivid_update_local_backup');
+            jQuery( document ).trigger( 'wpvivid_update_log_list');
+        }
+
+        if(data.last_msg_html !== false)
+        {
+            jQuery('#wpvivid_last_backup_msg').html(data.last_msg_html);
+        }
+
+        if(data.need_update)
+        {
+            m_need_update_2 = true;
+        }
+
+        if(data.task_no_response)
+        {
+            //jQuery('#wpvivid_current_doing').html('Task no response');
+            jQuery('#wpvivid_backup_cancel_btn').css({'pointer-events': 'auto', 'opacity': '1'});
+        }
+
+        if(data.running_backup_taskid!== '')
+        {
+            b_has_data = true;
+            task_retry_times = 0;
+            running_backup_taskid = data.running_backup_taskid;
+            wpvivid_control_backup_lock();
+            if(data.wait_resume)
+            {
+                if (data.next_resume_time !== 'get next resume time failed.')
+                {
+                    wpvivid_resume_backup2(running_backup_taskid, data.next_resume_time);
+                }
+                else {
+                    wpvivid_delete_backup_task(running_backup_taskid);
+                }
+            }
+        }
+        else
+        {
+            if(!wpvivid_prepare_backup)
+            {
+                jQuery('#wpvivid_backup_cancel_btn').css({'pointer-events': 'auto', 'opacity': '1'});
+                wpvivid_control_backup_unlock();
+            }
+            running_backup_taskid='';
+        }
+        if (!b_has_data)
+        {
+            task_retry_times++;
+            if (task_retry_times < 5)
+            {
+                m_need_update_2 = true;
+            }
+        }
+    }
+
+    function wpvivid_resume_backup2(backup_id, next_resume_time)
+    {
+        if(next_resume_time < 0){
+            next_resume_time = 0;
+        }
+        next_resume_time = next_resume_time * 1000;
+        setTimeout("wpvivid_cron_task()", next_resume_time);
+        setTimeout(function(){
+            task_retry_times = 0;
+            m_need_update_2=true;
+        }, next_resume_time);
+    }
+
     jQuery('#wpvivid_quickbackup_btn').click(function(){
         wpvivid_clear_notice('wpvivid_backup_notice');
         wpvivid_start_backup();
@@ -2367,22 +2767,30 @@ function wpvivid_backup_module_add_exec(){
             });
             backup_data = JSON.stringify(backup_data);
             var ajax_data = {
-                'action': 'wpvivid_prepare_backup',
+                'action': 'wpvivid_prepare_backup_2',
                 'backup': backup_data
             };
             wpvivid_control_backup_lock();
             jQuery('#wpvivid_backup_cancel_btn').css({'pointer-events': 'none', 'opacity': '0.4'});
             jQuery('#wpvivid_backup_log_btn').css({'pointer-events': 'none', 'opacity': '0.4'});
+            jQuery('#wpvivid_postbox_backup_percent').html('<div class="wpvivid-one-coloum wpvivid-workflow wpvivid-clear-float">\n' +
+                '                                            <p><span class="wpvivid-span-progress"><span class="wpvivid-span-processed-progress wpvivid-span-processed-percent-progress" style="width:0%">0% completed</span></span></p>\n' +
+                '                                            <p>\n' +
+                '                                                <span class="dashicons dashicons-admin-page wpvivid-dashicons-green"></span><span>Total Size:</span><span>N/A</span>\n' +
+                '                                                <span class="dashicons dashicons-upload wpvivid-dashicons-blue"></span><span>Uploaded:</span><span>N/A</span>\n' +
+                '                                                <span class="dashicons dashicons-plugins-checked wpvivid-dashicons-green"></span><span>Speed:</span><span>N/A</span>\n' +
+                '                                                <span class="dashicons dashicons-networking wpvivid-dashicons-green"></span><span>Network Connection:</span><span>N/A</span>\n' +
+                '                                            </p>\n' +
+                '                                            <p><span class="dashicons dashicons-welcome-write-blog wpvivid-dashicons-grey"></span><span>Action:</span><span id="wpvivid_current_doing">Ready to backup. Progress: 0%, running time: 0second.</span></p>\n' +
+                '                                            <div><input class="button-primary" id="wpvivid_backup_cancel_btn" type="submit" value="Cancel" style="pointer-events: none; opacity: 0.4;"></div>\n' +
+                '                                        </div>');
             jQuery('#wpvivid_postbox_backup_percent').show();
-            jQuery('#wpvivid_current_doing').html('Ready to backup. Progress: 0%, running time: 0second.');
-            var percent = '0%';
-            jQuery('#wpvivid_action_progress_bar_percent').css('width', percent);
-            jQuery('#wpvivid_backup_database_size').html('N/A');
-            jQuery('#wpvivid_backup_file_size').html('N/A');
-            jQuery('#wpvivid_current_doing').html('');
+
             wpvivid_completed_backup = 1;
             wpvivid_prepare_backup = true;
-            wpvivid_post_request(ajax_data, function (data) {
+            wpvivid_post_request(ajax_data, function (data)
+            {
+                wpvivid_prepare_backup = false;
                 try {
                     var jsonarray = jQuery.parseJSON(data);
                     if (jsonarray.result === 'failed') {
@@ -2436,11 +2844,11 @@ function wpvivid_backup_module_add_exec(){
     
     function wpvivid_backup_now(task_id){
         var ajax_data = {
-            'action': 'wpvivid_backup_now',
+            'action': 'wpvivid_backup_now_2',
             'task_id': task_id
         };
         task_retry_times = 0;
-        m_need_update=true;
+        m_need_update_2=true;
         wpvivid_post_request(ajax_data, function(data){
         }, function(XMLHttpRequest, textStatus, errorThrown) {
         });
@@ -2448,7 +2856,7 @@ function wpvivid_backup_module_add_exec(){
     
     function wpvivid_delete_backup_task(task_id){
         var ajax_data = {
-            'action': 'wpvivid_delete_task',
+            'action': 'wpvivid_delete_task_2',
             'task_id': task_id
         };
         wpvivid_post_request(ajax_data, function(data){}, function(XMLHttpRequest, textStatus, errorThrown) {
@@ -2467,7 +2875,7 @@ function wpvivid_backup_module_add_exec(){
     
     function wpvivid_delete_ready_task(error){
         var ajax_data={
-            'action': 'wpvivid_delete_ready_task'
+            'action': 'wpvivid_delete_ready_task_2'
         };
         wpvivid_post_request(ajax_data, function (data) {
             try {

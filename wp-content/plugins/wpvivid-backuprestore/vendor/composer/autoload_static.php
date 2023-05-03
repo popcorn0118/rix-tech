@@ -137,6 +137,13 @@ class ComposerStaticInit381ef710b1ae857a1b0cca4550c7cd7e
                 0 => __DIR__ . '/../..' . '/includes/lib/google-api-php-client/src',
             ),
         ),
+        'W' =>
+            array (
+                'WPvivid_Google_' =>
+                    array (
+                        0 => __DIR__ . '/../..' . '/includes/lib2/google-api-php-client/src',
+                    ),
+        ),
         'F' => 
         array (
             'File' => 
@@ -163,6 +170,8 @@ class ComposerStaticInit381ef710b1ae857a1b0cca4550c7cd7e
     public static $classMap = array (
         'Google_Service_Exception' => __DIR__ . '/../..' . '/includes/lib/google-api-php-client/src/Google/Service/Exception.php',
         'Google_Service_Resource' => __DIR__ . '/../..' . '/includes/lib/google-api-php-client/src/Google/Service/Resource.php',
+        'WPvivid_Google_Service_Exception' => __DIR__ . '/../..' . '/includes/lib2/google-api-php-client/src/WPvivid/Google/Service/Exception.php',
+        'WPvivid_Google_Service_Resource' => __DIR__ . '/../..' . '/includes/lib2/google-api-php-client/src/WPvivid/Google/Service/Resource.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

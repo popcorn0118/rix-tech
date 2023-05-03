@@ -50,18 +50,21 @@ class WPvivid_Migrate
         <?php
     }
 
-    public function wpvivid_add_tab_key(){
+    public function wpvivid_add_tab_key()
+    {
         ?>
         <a href="#" id="wpvivid_tab_key" class="nav-tab wrap-nav-tab" onclick="switchTabs(event,'key-page')"><?php _e('Key', 'wpvivid-backuprestore'); ?></a>
         <?php
     }
 
-    public function wpvivid_load_migrate_js($html){
+    public function wpvivid_load_migrate_js($html)
+    {
         do_action('wpvivid_add_migrate_js');
         return $html;
     }
 
-    public function wpvivid_add_migrate_js(){
+    public function wpvivid_add_migrate_js()
+    {
         ?>
         <script>
             var wpvivid_home_url = '<?php
@@ -139,17 +142,54 @@ class WPvivid_Migrate
                     'task_id': wpvivid_transfer_id
                 };
                 jQuery('#wpvivid_transfer_cancel_btn').css({'pointer-events': 'none', 'opacity': '0.4'});
-                wpvivid_post_request(ajax_data, function(data){
-                    try {
+                wpvivid_post_request(ajax_data, function(data)
+                {
+                    try
+                    {
                         var jsonarray = jQuery.parseJSON(data);
-                        jQuery('#wpvivid_upload_current_doing').html(jsonarray.msg);
+                        if(jsonarray.no_response)
+                        {
+                            var ret = confirm(jsonarray.msg);
+                            if(ret === true)
+                            {
+                                wpvivid_termination_backup_task_ex(jsonarray.task_id);
+                            }
+                        }
+                        else
+                        {
+                            jQuery('#wpvivid_current_doing').html(jsonarray.msg);
+                        }
                     }
-                    catch(err){
+                    catch(err)
+                    {
                         alert(err);
                     }
-                }, function(XMLHttpRequest, textStatus, errorThrown) {
+                }, function(XMLHttpRequest, textStatus, errorThrown)
+                {
                     jQuery('#wpvivid_transfer_cancel_btn').css({'pointer-events': 'auto', 'opacity': '1'});
                     var error_message = wpvivid_output_ajaxerror('cancelling the backup', textStatus, errorThrown);
+                    wpvivid_add_notice('Backup', 'Error', error_message);
+                });
+            }
+
+            function wpvivid_termination_backup_task_ex(task_id)
+            {
+                var ajax_data= {
+                    'action': 'wpvivid_shutdown_backup',
+                    'task_id': task_id
+                };
+                wpvivid_post_request(ajax_data, function(data)
+                {
+                    try
+                    {
+                    }
+                    catch(err)
+                    {
+                        alert(err);
+                    }
+                }, function(XMLHttpRequest, textStatus, errorThrown)
+                {
+                    var error_message = wpvivid_output_ajaxerror('terminationing the backup', textStatus, errorThrown);
                     wpvivid_add_notice('Backup', 'Error', error_message);
                 });
             }
@@ -323,8 +363,8 @@ class WPvivid_Migrate
                 $default_task_type = apply_filters('wpvivid_get_task_type', $default_task_type);
                 if(empty($default_task_type)){
                 ?>
-                wpvivid_activate_migrate_cron();
-                wpvivid_manage_upload_task();
+                //wpvivid_activate_migrate_cron();
+                //wpvivid_manage_upload_task();
                 <?php
                 }
                 ?>
@@ -1005,7 +1045,8 @@ class WPvivid_Migrate
         return $html;
     }
 
-    public function wpvivid_migrate_part_exec($html){
+    public function wpvivid_migrate_part_exec($html)
+    {
         $html = '';
         $html .= '<div id="wpvivid_transfer_btn" style="float: left;">
                         <input class="button-primary quicktransfer-btn" type="submit" value="'.esc_attr__( 'Clone then Transfer', 'wpvivid-backuprestore').'" onclick="wpvivid_click_send_backup();" />
@@ -1016,7 +1057,7 @@ class WPvivid_Migrate
                 //send_to_remote
                 var option_data = wpvivid_ajax_data_transfer(\'migrate\');
                 var ajax_data = {
-                    \'action\': \'wpvivid_send_backup_to_site\',
+                    \'action\': \'wpvivid_send_backup_to_site_2\',
                     \'backup_options\':option_data
                 };
                 migrate_task_need_update=true;
@@ -1047,13 +1088,14 @@ class WPvivid_Migrate
                 });
             }
 
-            function wpvivid_migrate_now(task_id){
+            function wpvivid_migrate_now(task_id)
+            {
                 var ajax_data = {
-                    \'action\': \'wpvivid_migrate_now\',
+                    \'action\': \'wpvivid_migrate_now_2\',
                     \'task_id\': task_id
                 };
                 task_recheck_times = 0;
-                migrate_task_need_update=true;
+                m_need_update_2=true;
                 wpvivid_post_request(ajax_data, function(data){
                 }, function(XMLHttpRequest, textStatus, errorThrown) {
                 });

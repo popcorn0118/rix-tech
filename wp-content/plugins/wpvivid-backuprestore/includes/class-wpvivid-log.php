@@ -98,7 +98,8 @@ class WPvivid_Log
             $tempfile=@fopen(WP_CONTENT_DIR.DIRECTORY_SEPARATOR.$options['log_save_location'].DIRECTORY_SEPARATOR.'.htaccess', 'x');
             if($tempfile)
             {
-                $text="deny from all";
+                //$text="deny from all";
+                $text="<IfModule mod_rewrite.c>\r\nRewriteEngine On\r\nRewriteRule .* - [F,L]\r\n</IfModule>";
                 fwrite($tempfile,$text );
             }
         }

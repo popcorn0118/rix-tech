@@ -66,7 +66,7 @@ class WPvivid_Export_Import
         $menu['tab']= 'admin.php?page=wpvivid-export-import';
         $menu['href']=$admin_url . 'admin.php?page=wpvivid-export-import';
         $menu['capability']='administrator';
-        $menu['index']=3;
+        $menu['index']=4;
         $toolbar_menus[$menu['parent']]['child'][$menu['id']]=$menu;
         return $toolbar_menus;
     }
@@ -78,7 +78,7 @@ class WPvivid_Export_Import
         $submenu['menu_title']=__('Export & Import', 'wpvivid-backuprestore');
         $submenu['capability']='administrator';
         $submenu['menu_slug']='wpvivid-export-import';
-        $submenu['index']=3;
+        $submenu['index']=4;
         $submenu['function']=array($this, 'init_page');
         $submenus[$submenu['menu_slug']]=$submenu;
         return $submenus;

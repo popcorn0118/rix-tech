@@ -2,18 +2,18 @@
  * External dependencies
  */
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import type { ReactElement } from 'react';
 import { formatPrice } from '@woocommerce/price-format';
 import {
 	PanelBody,
 	ExternalLink,
-	SelectControl,
 	ToggleControl,
+	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
+	__experimentalToggleGroupControl as ToggleGroupControl,
 } from '@wordpress/components';
 import { getSetting } from '@woocommerce/settings';
 import { __ } from '@wordpress/i18n';
 import Noninteractive from '@woocommerce/base-components/noninteractive';
-import { useTypographyProps } from '@woocommerce/base-hooks';
+import type { ReactElement } from 'react';
 
 /**
  * Internal dependencies
@@ -44,8 +44,6 @@ const Edit = ( { attributes, setAttributes }: Props ): ReactElement => {
 	const productCount = 0;
 	const productTotal = 0;
 
-	const typographyProps = useTypographyProps( attributes );
-
 	return (
 		<div { ...blockProps }>
 			<InspectorControls>
@@ -55,7 +53,7 @@ const Edit = ( { attributes, setAttributes }: Props ): ReactElement => {
 						'woo-gutenberg-products-block'
 					) }
 				>
-					<SelectControl
+					<ToggleGroupControl
 						label={ __(
 							'Add-to-Cart behaviour',
 							'woo-gutenberg-products-block'
@@ -68,23 +66,22 @@ const Edit = ( { attributes, setAttributes }: Props ): ReactElement => {
 							'Select what happens when a customer adds a product to the cart.',
 							'woo-gutenberg-products-block'
 						) }
-						options={ [
-							{
-								value: 'none',
-								label: __(
-									'Do nothing',
-									'woo-gutenberg-products-block'
-								),
-							},
-							{
-								value: 'open_drawer',
-								label: __(
-									'Open cart drawer',
-									'woo-gutenberg-products-block'
-								),
-							},
-						] }
-					/>
+					>
+						<ToggleGroupControlOption
+							value="none"
+							label={ __(
+								'Do nothing',
+								'woo-gutenberg-products-block'
+							) }
+						/>
+						<ToggleGroupControlOption
+							value="open_drawer"
+							label={ __(
+								'Open cart drawer',
+								'woo-gutenberg-products-block'
+							) }
+						/>
+					</ToggleGroupControl>
 					<ToggleControl
 						label={ __(
 							'Hide Cart Price',
@@ -111,7 +108,7 @@ const Edit = ( { attributes, setAttributes }: Props ): ReactElement => {
 					>
 						<p>
 							{ __(
-								'Edit the appearance of your empty and filled mini cart contents.',
+								'Edit the appearance of the Mini Cart.',
 								'woo-gutenberg-products-block'
 							) }
 						</p>
@@ -127,10 +124,7 @@ const Edit = ( { attributes, setAttributes }: Props ): ReactElement => {
 			<Noninteractive>
 				<button className="wc-block-mini-cart__button">
 					{ ! hasHiddenPrice && (
-						<span
-							className="wc-block-mini-cart__amount"
-							style={ typographyProps.style }
-						>
+						<span className="wc-block-mini-cart__amount">
 							{ formatPrice( productTotal ) }
 						</span>
 					) }

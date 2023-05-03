@@ -340,13 +340,13 @@ class WPvivid_Fresh_Install_Create_UI_Display_Free
                         <p>
                             <label>
                                 <input type="radio" option="create_wp" name="choose_create_staging_db" value="0" checked="">
-                                <span>Install the staging site to the live site's database (recommended)</span>
+                                <span>Install the staging site to the live site's database (Easy setup)</span>
                             </label>
                         </p>
                         <p>
                             <label>
                                 <input type="radio" option="create_wp" name="choose_create_staging_db" value="1">
-                                <span>Install the staging site to a separate database</span>
+                                <span>Install the staging site to a separate database (Expert setup)</span>
                             </label>
                         </p>
                         <p></p>

@@ -16,7 +16,8 @@ class WPvivid_error_log
             $tempfile=@fopen($dir.DIRECTORY_SEPARATOR.'error'.'/.htaccess', 'x');
             if($tempfile)
             {
-                $text="deny from all";
+                //$text="deny from all";
+                $text="<IfModule mod_rewrite.c>\r\nRewriteEngine On\r\nRewriteRule .* - [F,L]\r\n</IfModule>";
                 fwrite($tempfile,$text );
                 @fclose($tempfile);
             }
@@ -47,7 +48,8 @@ class WPvivid_error_log
             $tempfile=@fopen($dir.DIRECTORY_SEPARATOR.'wpvivid_log'.DIRECTORY_SEPARATOR.'error'.'/.htaccess', 'x');
             if($tempfile)
             {
-                $text="deny from all";
+                //$text="deny from all";
+                $text="<IfModule mod_rewrite.c>\r\nRewriteEngine On\r\nRewriteRule .* - [F,L]\r\n</IfModule>";
                 fwrite($tempfile,$text );
                 @fclose($tempfile);
             }
@@ -122,6 +124,38 @@ class WPvivid_error_log
     public static function get_error_log()
     {
         $log=new WPvivid_Log();
+        $dir=$log->GetSaveLogFolder();
+        $dir=$dir.'error';
+        $files=array();
+        $handler=opendir($dir);
+        if($handler === false){
+            return $files;
+        }
+        $regex='#^wpvivid.*_log.txt#';
+        while(($filename=readdir($handler))!==false)
+        {
+            if($filename != "." && $filename != "..")
+            {
+                if(is_dir($dir.$filename))
+                {
+                    continue;
+                }
+                else{
+                    if(preg_match($regex,$filename))
+                    {
+                        $files[] = $dir.DIRECTORY_SEPARATOR.$filename;
+                    }
+                }
+            }
+        }
+        if($handler)
+            @closedir($handler);
+        return $files;
+    }
+
+    public static function get_staging_error_log()
+    {
+        $log=new WPvivid_Staging_Log_Free();
         $dir=$log->GetSaveLogFolder();
         $dir=$dir.'error';
         $files=array();

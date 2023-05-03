@@ -5,7 +5,10 @@
 
 namespace Automattic\WooCommerce\Utilities;
 
+use Automattic\WooCommerce\Caches\OrderCacheController;
+use Automattic\WooCommerce\Internal\Admin\Orders\PageController;
 use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
+use Automattic\WooCommerce\Internal\Features\FeaturesController;
 use Automattic\WooCommerce\Internal\Utilities\COTMigrationUtil;
 use WC_Order;
 use WP_Post;
@@ -32,6 +35,15 @@ final class OrderUtil {
 	 */
 	public static function custom_orders_table_usage_is_enabled() : bool {
 		return wc_get_container()->get( CustomOrdersTableController::class )->custom_orders_table_usage_is_enabled();
+	}
+
+	/**
+	 * Helper function to get whether the orders cache should be used or not.
+	 *
+	 * @return bool True if the orders cache should be used, false otherwise.
+	 */
+	public static function orders_cache_usage_is_enabled() : bool {
+		return wc_get_container()->get( OrderCacheController::class )->orders_cache_usage_is_enabled();
 	}
 
 	/**
@@ -63,9 +75,9 @@ final class OrderUtil {
 	 *
 	 * @param WC_Order|WP_Post $post_or_order_object Post or order object.
 	 *
-	 * @return WC_Order WC_Order object.
+	 * @return bool|WC_Order|WC_Order_Refund WC_Order object.
 	 */
-	public static function init_theorder_object( $post_or_order_object ) : WC_Order {
+	public static function init_theorder_object( $post_or_order_object ) {
 		return wc_get_container()->get( COTMigrationUtil::class )->init_theorder_object( $post_or_order_object );
 	}
 
@@ -101,5 +113,25 @@ final class OrderUtil {
 	 */
 	public static function get_order_type( $order_id ) {
 		return wc_get_container()->get( COTMigrationUtil::class )->get_order_type( $order_id );
+	}
+
+	/**
+	 * Helper method to generate admin url for an order.
+	 *
+	 * @param int $order_id Order ID.
+	 *
+	 * @return string Admin url for an order.
+	 */
+	public static function get_order_admin_edit_url( int $order_id ) : string {
+		return wc_get_container()->get( PageController::class )->get_edit_url( $order_id );
+	}
+
+	/**
+	 * Helper method to generate admin URL for new order.
+	 *
+	 * @return string Link for new order.
+	 */
+	public static function get_order_admin_new_url() : string {
+		return wc_get_container()->get( PageController::class )->get_new_page_url();
 	}
 }

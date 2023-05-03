@@ -10,9 +10,66 @@ class WPvivid_Function_Realize
     public function _backup_cancel($task_id = '')
     {
         global $wpvivid_plugin;
-        try {
+
+        try
+        {
             $tasks = WPvivid_taskmanager::get_tasks();
-            foreach ($tasks as $task){
+            $no_responds=false;
+            $task_id='';
+            foreach ($tasks as $task)
+            {
+                $task_id = $task['id'];
+                $backup_task=new WPvivid_Backup_Task_2($task['id']);
+                $status=$backup_task->get_status();
+
+                $file_name=$backup_task->task['options']['file_prefix'];
+                $path=$backup_task->task['options']['dir'];
+                $file =$path. DIRECTORY_SEPARATOR . $file_name . '_cancel';
+                touch($file);
+
+                $last_active_time=time()-$status['run_time'];
+                if($last_active_time>180)
+                {
+                    $no_responds=true;
+                }
+
+                $timestamp = wp_next_scheduled('wpvivid_task_monitor_event_2', array($task_id));
+
+                if ($timestamp === false)
+                {
+                    $wpvivid_plugin->backup2->add_monitor_event($task_id);
+                }
+            }
+
+            if($no_responds)
+            {
+                $ret['result'] = 'success';
+                $ret['no_response'] = true;
+                $ret['task_id'] = $task_id;
+                $ret['msg'] = __('The backup is not responding for a while, do you want to force cancel it?', 'wpvivid-backuprestore');
+            }
+            else
+            {
+                $ret['result'] = 'success';
+                $ret['no_response'] = false;
+                $ret['task_id'] = $task_id;
+                $ret['msg'] = __('The backup will be canceled after backing up the current chunk ends.', 'wpvivid-backuprestore');
+            }
+
+        }
+        catch (Exception $error)
+        {
+            $message = 'An exception has occurred. class: '.get_class($error).';msg: '.$error->getMessage().';code: '.$error->getCode().';line: '.$error->getLine().';in_file: '.$error->getFile().';';
+            error_log($message);
+            return array('result'=>'failed','error'=>$message);
+        }
+
+        /*
+        try
+        {
+            $tasks = WPvivid_taskmanager::get_tasks();
+            foreach ($tasks as $task)
+            {
                 $task_id = $task['id'];
                 $status=WPvivid_taskmanager::get_backup_task_status($task_id);
                 $time_spend=$status['run_time']-$status['start_time'];
@@ -25,7 +82,9 @@ class WPvivid_Function_Realize
                 {
                     $limit=WPVIVID_MAX_EXECUTION_TIME;
                 }
-                if($time_spend > $limit * 2){
+
+                if($time_spend > $limit * 2)
+                {
                     $file_name = WPvivid_taskmanager::get_task_options($task_id, 'file_prefix');
                     $backup_options = WPvivid_taskmanager::get_task_options($task_id, 'backup_options');
                     $file = WP_CONTENT_DIR . DIRECTORY_SEPARATOR . $backup_options['dir'] . DIRECTORY_SEPARATOR . $file_name . '_cancel';
@@ -42,7 +101,8 @@ class WPvivid_Function_Realize
                     WPvivid_Schedule::clear_monitor_schedule($task_id);
                     WPvivid_taskmanager::delete_task($task_id);
                 }
-                else {
+                else
+                {
                     $file_name = WPvivid_taskmanager::get_task_options($task_id, 'file_prefix');
                     $backup_options = WPvivid_taskmanager::get_task_options($task_id, 'backup_options');
                     $file = WP_CONTENT_DIR . DIRECTORY_SEPARATOR . $backup_options['dir'] . DIRECTORY_SEPARATOR . $file_name . '_cancel';
@@ -54,9 +114,10 @@ class WPvivid_Function_Realize
                         $wpvivid_plugin->add_monitor_event($task_id, 10);
                     }
                 }
+                $wpvivid_plugin->wpvivid_check_clear_litespeed_rule($task_id);
             }
 
-            /*if (WPvivid_taskmanager::get_task($task_id) !== false) {
+            if (WPvivid_taskmanager::get_task($task_id) !== false) {
                 $file_name = WPvivid_taskmanager::get_task_options($task_id, 'file_prefix');
                 $backup_options = WPvivid_taskmanager::get_task_options($task_id, 'backup_options');
                 $file = WP_CONTENT_DIR . DIRECTORY_SEPARATOR . $backup_options['dir'] . DIRECTORY_SEPARATOR . $file_name . '_cancel';
@@ -67,7 +128,7 @@ class WPvivid_Function_Realize
 
             if ($timestamp === false) {
                 $wpvivid_plugin->add_monitor_event($task_id, 10);
-            }*/
+            }
             $ret['result'] = 'success';
             $ret['msg'] = __('The backup will be canceled after backing up the current chunk ends.', 'wpvivid-backuprestore');
         }
@@ -80,7 +141,7 @@ class WPvivid_Function_Realize
             $message = 'An exception has occurred. class: '.get_class($error).';msg: '.$error->getMessage().';code: '.$error->getCode().';line: '.$error->getLine().';in_file: '.$error->getFile().';';
             error_log($message);
             return array('result'=>'failed','error'=>$message);
-        }
+        }*/
         return $ret;
     }
 

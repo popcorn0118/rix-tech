@@ -2594,7 +2594,7 @@ final class WPvivid_S3Request
 	* @param string &$data Data
 	* @return integer
 	*/
-	private function __responseWriteCallback(&$curl, &$data)
+	private function __responseWriteCallback($curl, $data)
 	{
 		if (in_array($this->response->code, array(200, 206)) && $this->fp !== false)
 			return fwrite($this->fp, $data);

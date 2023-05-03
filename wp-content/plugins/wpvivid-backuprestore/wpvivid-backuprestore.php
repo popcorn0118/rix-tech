@@ -7,7 +7,7 @@
  * @wordpress-plugin
  * Plugin Name:       WPvivid Backup Plugin
  * Description:       Clone or copy WP sites then move or migrate them to new host (new domain), schedule backups, transfer backups to leading remote storage. All in one.
- * Version:           0.9.77
+ * Version:           0.9.86
  * Author:            WPvivid Team
  * Author URI:        https://wpvivid.com
  * License:           GPL-3.0+
@@ -21,7 +21,7 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
-define( 'WPVIVID_PLUGIN_VERSION', '0.9.77' );
+define( 'WPVIVID_PLUGIN_VERSION', '0.9.86' );
 //
 define('WPVIVID_RESTORE_INIT','init');
 define('WPVIVID_RESTORE_READY','ready');
@@ -38,10 +38,10 @@ define('WPVIVID_PLUGIN_DIR',dirname(__FILE__));
 define('WPVIVID_PLUGIN_DIR_URL',plugin_dir_url(__FILE__).'admin/');
 define('WPVIVID_PLUGIN_IMAGES_URL',WPVIVID_PLUGIN_URL.'/admin/partials/images/');
 //We set a long enough default execution time (10 min) to ensure that the backup process can be completed.
-define('WPVIVID_MAX_EXECUTION_TIME',900);
-define('WPVIVID_RESTORE_MAX_EXECUTION_TIME', 1800);
+define('WPVIVID_MAX_EXECUTION_TIME',300);
+define('WPVIVID_RESTORE_MAX_EXECUTION_TIME', 300);
 define('WPVIVID_MEMORY_LIMIT','256M');
-define('WPVIVID_RESTORE_MEMORY_LIMIT','256M');
+define('WPVIVID_RESTORE_MEMORY_LIMIT','512M');
 define('WPVIVID_MIGRATE_SIZE', '2048');
 //If the server uses fastcgi then default execution time should be set to 2 min for more efficient.
 define('WPVIVID_MAX_EXECUTION_TIME_FCGI',180);

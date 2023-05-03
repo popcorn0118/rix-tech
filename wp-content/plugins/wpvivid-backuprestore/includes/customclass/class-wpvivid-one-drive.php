@@ -208,7 +208,7 @@ class WPvivid_one_drive extends WPvivid_Remote
                     <?php _e('Please read <a target="_blank" href="https://wpvivid.com/privacy-policy" style="text-decoration: none;">this privacy policy</a> for use of our Microsoft OneDrive authorization app (none of your backup data is sent to us).', 'wpvivid-backuprestore'); ?>
                 </div>
                 <div style="color:#8bc34a; padding: 10px 10px 10px 0;">
-                    <strong><?php esc_html_e('Authentication is done, please continue to enter the storge information, then click \'Add Now\' button to save it.', 'wpvivid-backuprestore'); ?></strong>
+                    <strong><?php esc_html_e('Authentication is done, please continue to enter the storage information, then click \'Add Now\' button to save it.', 'wpvivid-backuprestore'); ?></strong>
                 </div>
                 <div style="padding: 10px 10px 10px 0;">
                     <strong><?php _e('Enter Your Microsoft OneDrive Information', 'wpvivid-backuprestore'); ?></strong>
@@ -534,6 +534,7 @@ class WPvivid_one_drive extends WPvivid_Remote
             {
                 $file_data['size']=filesize($file);
                 $file_data['uploaded']=0;
+                $file_data['uploadUrl']='';
                 $job_data[basename($file)]=$file_data;
             }
             WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_ONEDRIVE,WPVIVID_UPLOAD_UNDO,'Start uploading',$job_data);
@@ -560,7 +561,10 @@ class WPvivid_one_drive extends WPvivid_Remote
             {
                 return $result;
             }
-
+            else
+            {
+                WPvivid_taskmanager::wpvivid_reset_backup_retry_times($task_id);
+            }
             if($this->need_refresh())
             {
                 $wpvivid_plugin->wpvivid_log->WriteLog('The token expired and will go to the server to refresh the token.','notice');
@@ -832,16 +836,30 @@ class WPvivid_one_drive extends WPvivid_Remote
         }
         else
         {
-            $wpvivid_plugin->wpvivid_log->WriteLog('Creating upload session.','notice');
-            //big file
-            $ret=$this->create_upload_session(basename($local_file));
-
-            if($ret['result']===WPVIVID_FAILED)
+            $upload_job=WPvivid_taskmanager::get_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_ONEDRIVE);
+            if(empty( $upload_job['job_data'][basename($local_file)]['uploadUrl']))
             {
-                return $ret;
+                $wpvivid_plugin->wpvivid_log->WriteLog('Creating upload session.','notice');
+                //big file
+                $ret=$this->create_upload_session(basename($local_file));
+
+                if($ret['result']===WPVIVID_FAILED)
+                {
+                    return $ret;
+                }
+
+                $upload_job['job_data'][basename($local_file)]['uploadUrl']=$ret['session_url'];
+                $session_url=$ret['session_url'];
+
+                WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_ONEDRIVE,WPVIVID_UPLOAD_SUCCESS,'Created upload session',$upload_job['job_data']);
             }
+            else
+            {
+                $session_url=$upload_job['job_data'][basename($local_file)]['uploadUrl'];
+            }
+
             $wpvivid_plugin->wpvivid_log->WriteLog('Ready to start uploading files.','notice');
-            $ret=$this->upload_resume($ret['session_url'],$local_file,$task_id,$callback);
+            $ret=$this->upload_resume($session_url,$local_file,$task_id,$callback);
 
             return $ret;
         }
@@ -892,7 +910,15 @@ class WPvivid_one_drive extends WPvivid_Remote
         global $wpvivid_plugin;
         $upload_job=WPvivid_taskmanager::get_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_ONEDRIVE);
 
-        $offset=0;
+        $ret=$this->get_upload_offset($session_url);
+
+        if($ret['result']=='failed')
+        {
+            return $ret;
+        }
+
+        $offset=$ret['offset'];
+        $wpvivid_plugin->wpvivid_log->WriteLog('offset '.$offset,'notice');
 
         WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_ONEDRIVE,WPVIVID_UPLOAD_UNDO,'Start uploading '.basename($file).'.',$upload_job['job_data']);
 
@@ -937,6 +963,53 @@ class WPvivid_one_drive extends WPvivid_Remote
         $wpvivid_plugin->wpvivid_log->WriteLog('Finished uploading '.basename($file),'notice');
         WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_ONEDRIVE,WPVIVID_UPLOAD_SUCCESS,'Uploading '.basename($file).' completed.',$upload_job['job_data']);
         return array('result' =>WPVIVID_SUCCESS);
+    }
+
+    private function get_upload_offset($uploadUrl)
+    {
+        global $wpvivid_plugin;
+        $wpvivid_plugin->wpvivid_log->WriteLog('uploadUrl: '.$uploadUrl,'notice');
+
+        $url=$uploadUrl;
+        $response=$this->remote_get($url);
+        if($response['result']==WPVIVID_SUCCESS)
+        {
+            if($response['code']==200)
+            {
+                $ranges=$response['body']['nextExpectedRanges'];
+
+                if (is_array($ranges))
+                {
+                    $range = $ranges[0];
+                } else {
+                    $range=$ranges;
+                }
+
+                if (preg_match('/^(\d+)/', $range, $matches))
+                {
+                    $uploaded = $matches[1];
+                    $ret['result']='success';
+                    $ret['offset']=$uploaded;
+                    return $ret;
+                }
+                else
+                {
+                    $ret['result']='failed';
+                    $ret['error']='get offset failed';
+                    return $ret;
+                }
+            }
+            else
+            {
+                $ret['result']='failed';
+                $ret['error']='get offset failed';
+                return $ret;
+            }
+        }
+        else
+        {
+            return $response;
+        }
     }
 
     private function create_upload_session($file)

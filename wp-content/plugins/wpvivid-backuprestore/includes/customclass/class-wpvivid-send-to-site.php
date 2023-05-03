@@ -457,9 +457,10 @@ class WPvivid_Send_to_site extends WPvivid_Remote
 
     public function upload_finish($task_id)
     {
+        $task= new WPvivid_Backup_Task_2($task_id);
+        $task->update_backup_result();
         $task=WPvivid_taskmanager::get_task($task_id);
         $json=array();
-
         $json['backup']=$task;
         $json['backup_id']=$task_id;
         $json=json_encode($json);
@@ -1020,7 +1021,7 @@ class WPvivid_Send_to_site extends WPvivid_Remote
                     $ret['result'] = WPVIVID_SUCCESS;
                 }
                 else{
-                    $ret['result']=WPVIVID_PRO_FAILED;
+                    $ret['result']='failed';
                     $ret['error']='Failed to get local storage directory.';
                 }
                 echo json_encode($ret);

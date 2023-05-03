@@ -47,7 +47,9 @@ function astraUpdateShopToolbar() {
 				dummyPara = document.createElement( "p" );
 
 			dummyPara.className = 'woocommerce-result-count';
-			dummyPara.innerHTML = document.querySelector( '.woocommerce-result-count' ).innerHTML;
+			if ( null !== document.querySelector( '.woocommerce-result-count'  ) ) {
+				dummyPara.innerHTML = document.querySelector( '.woocommerce-result-count' ).innerHTML;
+			}
 
 			noticeWrapper = document.querySelector('.woocommerce-notices-wrapper');
 
@@ -60,6 +62,12 @@ function astraUpdateShopToolbar() {
 
 			document.querySelector( '.woocommerce-notices-wrapper + .woocommerce-result-count' ).remove();
 		}
+        // Submit form on "orderby" select change to trigger shop filters.
+        document.querySelector( '.ast-woocommerce-shop-page-modern-style .woocommerce-ordering' ).addEventListener( 'change', function( event ) {
+            if ( event.target.classList.contains( 'orderby' )) {
+                event.target.closest( 'form' ).submit();
+            }
+        });
 	}
 }
 

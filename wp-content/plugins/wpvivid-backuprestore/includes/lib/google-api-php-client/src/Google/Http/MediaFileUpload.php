@@ -204,6 +204,15 @@ class Google_Http_MediaFileUpload
      return $this->makePutRequest($httpRequest);
   }
 
+    public function setResumeUri($resumeUri)
+    {
+        $this->resumeUri = $resumeUri;
+    }
+    public function setProgress($progress)
+    {
+        $this->progress = $progress;
+    }
+
   /**
    * @return Psr\Http\Message\RequestInterface $request
    * @visible for testing

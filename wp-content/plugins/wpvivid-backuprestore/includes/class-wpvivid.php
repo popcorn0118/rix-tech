@@ -61,6 +61,8 @@ class WPvivid {
 
     public $staging;
 
+    public $backup2;
+
 	public function __construct()
     {
         $this->version = WPVIVID_PLUGIN_VERSION;
@@ -147,7 +149,7 @@ class WPvivid {
 	public function init_cron()
     {
         $schedule=new WPvivid_Schedule();
-        add_action(WPVIVID_MAIN_SCHEDULE_EVENT,array( $this,'main_schedule'));
+        //add_action(WPVIVID_MAIN_SCHEDULE_EVENT,array( $this,'main_schedule'));
         add_action(WPVIVID_RESUME_SCHEDULE_EVENT,array( $this,'resume_schedule'));
         add_action(WPVIVID_CLEAN_BACKING_UP_DATA_EVENT,array($this,'clean_backing_up_data_event'));
         add_action(WPVIVID_CLEAN_BACKUP_RECORD_EVENT,array($this,'clean_backup_record_event'));
@@ -203,6 +205,8 @@ class WPvivid {
         include_once WPVIVID_PLUGIN_DIR . '/includes/upload-cleaner/class-wpvivid-uploads-cleaner.php';
         include_once WPVIVID_PLUGIN_DIR . '/includes/staging/class-wpvivid-staging.php';
 
+        include_once WPVIVID_PLUGIN_DIR . '/includes/snapshot/class-wpvivid-snapshot.php';
+
         $this->function_realize=new WPvivid_Function_Realize();
         $this->migrate=new WPvivid_Migrate();
         $this->backup_uploader=new Wpvivid_BackupUploader();
@@ -210,8 +214,36 @@ class WPvivid {
         $send_to_site=new WPvivid_Send_to_site();
         $export_import = new WPvivid_Export_Import();
         $cleaner=new WPvivid_Uploads_Cleaner();
-        $this->staging=new WPvivid_Staging_Free();
+
+        if(!$this->wpvivid_check_staging_pro_active())
+        {
+            $this->staging=new WPvivid_Staging_Free();
+        }
+
+        new WPvivid_Snapshot_Ex();
+
+        include_once WPVIVID_PLUGIN_DIR . '/includes/new_backup/class-wpvivid-backup2.php';
+        $this->backup2=new WPvivid_Backup_2();
+
+        include_once WPVIVID_PLUGIN_DIR . '/includes/new_backup/class-wpvivid-restore2.php';
+        new WPvivid_Restore_2();
 	}
+
+	public function wpvivid_check_staging_pro_active()
+    {
+        if ( ! function_exists( 'is_plugin_active' ) )
+        {
+            include_once(ABSPATH.'wp-admin/includes/plugin.php');
+        }
+        if(is_plugin_active('wpvivid-staging/wpvivid-staging.php'))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
 	public function init_pclzip_tmp_folder()
     {
@@ -1201,6 +1233,7 @@ class WPvivid {
         //start backup
         try
         {
+            $this->wpvivid_check_add_litespeed_server($task_id);
             $backup=new WPvivid_Backup();
 
             //$backup->clearcache();
@@ -1399,6 +1432,7 @@ class WPvivid {
         {
             WPvivid_mail_report::send_report_mail($task);
         }
+        $this->wpvivid_check_clear_litespeed_rule($task['id']);
     }
 
     function wpvivid_mark_task($task)
@@ -1468,6 +1502,7 @@ class WPvivid {
         WPvivid_Schedule::clear_monitor_schedule($task['id']);
         $this->add_clean_backing_up_data_event($task['id']);
         WPvivid_mail_report::send_report_mail($task);
+        $this->wpvivid_check_clear_litespeed_rule($task['id']);
     }
 
     public function deal_shutdown_error($task_id)
@@ -4221,7 +4256,8 @@ class WPvivid {
                 @fopen(WP_CONTENT_DIR . DIRECTORY_SEPARATOR . $dir['path'] . '/index.html', 'x');
                 $tempfile = @fopen(WP_CONTENT_DIR . DIRECTORY_SEPARATOR . $dir['path'] . '/.htaccess', 'x');
                 if ($tempfile) {
-                    $text = "deny from all";
+                    //$text = "deny from all";
+                    $text="<IfModule mod_rewrite.c>\r\nRewriteEngine On\r\nRewriteRule .* - [F,L]\r\n</IfModule>";
                     fwrite($tempfile, $text);
                     fclose($tempfile);
                 } else {
@@ -5040,8 +5076,6 @@ class WPvivid {
 
     public function wpvivid_set_general_setting($setting_data, $setting, $options)
     {
-        $setting['use_temp_file'] = intval($setting['use_temp_file']);
-        $setting['use_temp_size'] = intval($setting['use_temp_size']);
         $setting['exclude_file_size'] = intval($setting['exclude_file_size']);
         $setting['max_execution_time'] = intval($setting['max_execution_time']);
         $setting['restore_max_execution_time'] = intval($setting['restore_max_execution_time']);
@@ -5054,13 +5088,9 @@ class WPvivid {
             $setting_data['wpvivid_email_setting']['email_enable'] = $setting['email_enable'];
         }
 
-        $setting_data['wpvivid_compress_setting']['compress_type'] = $setting['compress_type'];
-        $setting_data['wpvivid_compress_setting']['max_file_size'] = $setting['max_file_size'] . 'M';
-        $setting_data['wpvivid_compress_setting']['no_compress'] = $setting['no_compress'];
-        $setting_data['wpvivid_compress_setting']['use_temp_file'] = $setting['use_temp_file'];
-        $setting_data['wpvivid_compress_setting']['use_temp_size'] = $setting['use_temp_size'];
-        $setting_data['wpvivid_compress_setting']['exclude_file_size'] = $setting['exclude_file_size'];
-        $setting_data['wpvivid_compress_setting']['subpackage_plugin_upload'] = $setting['subpackage_plugin_upload'];
+        $setting_data['wpvivid_common_setting']['max_file_size'] = $setting['max_file_size'];
+        $setting_data['wpvivid_common_setting']['exclude_file_size'] = $setting['exclude_file_size'];
+
 
         $setting_data['wpvivid_local_setting']['path'] = $setting['path'];
 
@@ -5090,6 +5120,17 @@ class WPvivid {
         $setting_data['wpvivid_common_setting']['db_connect_method'] = $setting['db_connect_method'];
         $setting_data['wpvivid_common_setting']['retain_local'] = $setting['retain_local'];
         $setting_data['wpvivid_common_setting']['uninstall_clear_folder'] = $setting['uninstall_clear_folder'];
+
+        //new
+        $setting_data['wpvivid_common_setting']['compress_file_count'] = intval($setting['compress_file_count']);
+        $setting_data['wpvivid_common_setting']['max_sql_file_size'] = intval($setting['max_sql_file_size']);
+
+        $setting_data['wpvivid_common_setting']['replace_rows_pre_request'] = intval($setting['replace_rows_pre_request']);
+        $setting_data['wpvivid_common_setting']['sql_file_buffer_pre_request'] = intval($setting['sql_file_buffer_pre_request']);
+        $setting_data['wpvivid_common_setting']['use_index'] = intval($setting['use_index']);
+        $setting_data['wpvivid_common_setting']['unzip_files_pre_request'] = intval($setting['unzip_files_pre_request']);
+
+        $setting_data['wpvivid_common_setting']['zip_method'] = $setting['zip_method'];
 
 		return $setting_data;
     }
@@ -5257,6 +5298,34 @@ class WPvivid {
         if(empty($data['migrate_size']) && $data['migrate_size'] != '0')
         {
             $ret['error']=__('The value of \'Chunk Size\' can\'t be empty.', 'wpvivid-backuprestore');
+            return $ret;
+        }
+
+        $data['compress_file_count']=sanitize_text_field($data['compress_file_count']);
+        if(!isset($data['compress_file_count']) || empty($data['compress_file_count']))
+        {
+            $ret['error']=__('The value of \'The number of files compressed to the backup zip each time\' can\'t be empty.', 'wpvivid-backuprestore');
+            return $ret;
+        }
+
+        $data['max_sql_file_size']=sanitize_text_field($data['max_sql_file_size']);
+        if(!isset($data['max_sql_file_size']) || empty($data['max_sql_file_size']))
+        {
+            $ret['error']=__('The value of \'Split a sql file every this size\' can\'t be empty.', 'wpvivid-backuprestore');
+            return $ret;
+        }
+
+        $data['replace_rows_pre_request']=sanitize_text_field($data['replace_rows_pre_request']);
+        if(!isset($data['replace_rows_pre_request']) || empty($data['replace_rows_pre_request']))
+        {
+            $ret['error']=__('The value of \'Maximum rows of data to be processed per request for restoration\' can\'t be empty.', 'wpvivid-backuprestore');
+            return $ret;
+        }
+
+        $data['sql_file_buffer_pre_request']=sanitize_text_field($data['sql_file_buffer_pre_request']);
+        if(!isset($data['sql_file_buffer_pre_request']) || empty($data['sql_file_buffer_pre_request']))
+        {
+            $ret['error']=__('The value of \'Maximum size of sql file to be imported per request for restoration\' can\'t be empty.', 'wpvivid-backuprestore');
             return $ret;
         }
 
@@ -5565,9 +5634,10 @@ class WPvivid {
         $this->ajax_check_security();
         try {
             $files = WPvivid_error_log::get_error_log();
+            $staging_files = WPvivid_error_log::get_staging_error_log();
 
-            if (!class_exists('PclZip'))
-                include_once(ABSPATH . '/wp-admin/includes/class-pclzip.php');
+            if (!class_exists('WPvivid_PclZip'))
+                include_once WPVIVID_PLUGIN_DIR . '/includes/zip/class-wpvivid-pclzip.php';
 
             $backup_path = WPvivid_Setting::get_backupdir();
             $path = WP_CONTENT_DIR . DIRECTORY_SEPARATOR . $backup_path . DIRECTORY_SEPARATOR . 'wpvivid_debug.zip';
@@ -5575,10 +5645,17 @@ class WPvivid {
             if (file_exists($path)) {
                 @unlink($path);
             }
-            $archive = new PclZip($path);
+            $archive = new WPvivid_PclZip($path);
 
             if (!empty($files)) {
-                if (!$archive->add($files, PCLZIP_OPT_REMOVE_ALL_PATH)) {
+                if (!$archive->add($files, WPVIVID_PCLZIP_OPT_REMOVE_ALL_PATH)) {
+                    echo $archive->errorInfo(true) . ' <a href="' . admin_url() . 'admin.php?page=WPvivid">retry</a>.';
+                    exit;
+                }
+            }
+
+            if (!empty($staging_files)) {
+                if (!$archive->add($staging_files, WPVIVID_PCLZIP_OPT_REMOVE_ALL_PATH)) {
                     echo $archive->errorInfo(true) . ' <a href="' . admin_url() . 'admin.php?page=WPvivid">retry</a>.';
                     exit;
                 }
@@ -5592,7 +5669,7 @@ class WPvivid {
             $server_file = fopen($server_file_path, 'x');
             fclose($server_file);
             file_put_contents($server_file_path, $server_info);
-            if (!$archive->add($server_file_path, PCLZIP_OPT_REMOVE_ALL_PATH)) {
+            if (!$archive->add($server_file_path, WPVIVID_PCLZIP_OPT_REMOVE_ALL_PATH)) {
                 echo $archive->errorInfo(true) . ' <a href="' . admin_url() . 'admin.php?page=WPvivid">retry</a>.';
                 exit;
             }
@@ -6692,11 +6769,12 @@ class WPvivid {
 
     public function get_zip_object_class($class)
     {
-        if(version_compare(phpversion(),'8.0.0','>='))
+        /*if(version_compare(phpversion(),'8.0.0','>='))
         {
             return 'WPvivid_PclZip_Class_Ex';
         }
-        return $class;
+        return $class;*/
+        return 'WPvivid_PclZip_Class_Ex';
     }
 
     public function get_backup_path($backup_item, $file_name)
@@ -6750,5 +6828,125 @@ class WPvivid {
             }
         }
         return $url;
+    }
+
+    public function wpvivid_check_add_litespeed_server($task_id)
+    {
+        $litespeed=false;
+        if ( isset( $_SERVER['HTTP_X_LSCACHE'] ) && $_SERVER['HTTP_X_LSCACHE'] )
+        {
+            $litespeed=true;
+        }
+        elseif ( isset( $_SERVER['LSWS_EDITION'] ) && strpos( $_SERVER['LSWS_EDITION'], 'Openlitespeed' ) === 0 ) {
+            $litespeed=true;
+        }
+        elseif ( isset( $_SERVER['SERVER_SOFTWARE'] ) && $_SERVER['SERVER_SOFTWARE'] == 'LiteSpeed' ) {
+            $litespeed=true;
+        }
+
+        if($litespeed)
+        {
+            if($this->wpvivid_log->log_file_handle==false)
+            {
+                $this->wpvivid_log->OpenLogFile(WPvivid_taskmanager::get_task_options($task_id,'log_file_name'));
+            }
+            $this->wpvivid_log->WriteLog('LiteSpeed Server.','notice');
+
+            if ( ! function_exists( 'got_mod_rewrite' ) )
+            {
+                require_once ABSPATH . 'wp-admin/includes/misc.php';
+            }
+
+            if(function_exists('insert_with_markers'))
+            {
+                if(!function_exists('get_home_path'))
+                    require_once(ABSPATH . 'wp-admin/includes/file.php');
+                $home_path     = get_home_path();
+                $htaccess_file = $home_path . '.htaccess';
+
+                if ( ( ! file_exists( $htaccess_file ) && is_writable( $home_path ) ) || is_writable( $htaccess_file ) )
+                {
+                    if ( got_mod_rewrite() )
+                    {
+                        $line[]='<IfModule Litespeed>';
+                        $line[]='RewriteEngine On';
+                        $line[]='RewriteRule .* - [E=noabort:1, E=noconntimeout:1]';
+                        $line[]='</IfModule>';
+                        insert_with_markers($htaccess_file,'WPvivid Rewrite Rule for LiteSpeed',$line);
+                        $this->wpvivid_log->WriteLog('Add LiteSpeed Rule','notice');
+                    }
+                    else
+                    {
+                        $this->wpvivid_log->WriteLog('mod_rewrite not found.','notice');
+                    }
+                }
+                else
+                {
+                    $this->wpvivid_log->WriteLog('.htaccess file not exists or not writable.','notice');
+                }
+            }
+            else
+            {
+                $this->wpvivid_log->WriteLog('insert_with_markers function not exists.','notice');
+            }
+        }
+    }
+
+    public function wpvivid_check_clear_litespeed_rule($task_id)
+    {
+        $litespeed=false;
+        if ( isset( $_SERVER['HTTP_X_LSCACHE'] ) && $_SERVER['HTTP_X_LSCACHE'] )
+        {
+            $litespeed=true;
+        }
+        elseif ( isset( $_SERVER['LSWS_EDITION'] ) && strpos( $_SERVER['LSWS_EDITION'], 'Openlitespeed' ) === 0 ) {
+            $litespeed=true;
+        }
+        elseif ( isset( $_SERVER['SERVER_SOFTWARE'] ) && $_SERVER['SERVER_SOFTWARE'] == 'LiteSpeed' ) {
+            $litespeed=true;
+        }
+
+        if($litespeed)
+        {
+            if($this->wpvivid_log->log_file_handle==false)
+            {
+                $this->wpvivid_log->OpenLogFile(WPvivid_taskmanager::get_task_options($task_id,'log_file_name'));
+            }
+            $this->wpvivid_log->WriteLog('LiteSpeed Server.','notice');
+
+            if ( ! function_exists( 'got_mod_rewrite' ) )
+            {
+                require_once ABSPATH . 'wp-admin/includes/misc.php';
+            }
+
+            if(function_exists('insert_with_markers'))
+            {
+                if(!function_exists('get_home_path'))
+                    require_once(ABSPATH . 'wp-admin/includes/file.php');
+                $home_path     = get_home_path();
+                $htaccess_file = $home_path . '.htaccess';
+
+                if ( ( ! file_exists( $htaccess_file ) && is_writable( $home_path ) ) || is_writable( $htaccess_file ) )
+                {
+                    if ( got_mod_rewrite() )
+                    {
+                        insert_with_markers($htaccess_file,'WPvivid Rewrite Rule for LiteSpeed','');
+                        $this->wpvivid_log->WriteLog('Clear LiteSpeed Rule','notice');
+                    }
+                    else
+                    {
+                        $this->wpvivid_log->WriteLog('mod_rewrite not found.','notice');
+                    }
+                }
+                else
+                {
+                    $this->wpvivid_log->WriteLog('.htaccess file not exists or not writable.','notice');
+                }
+            }
+            else
+            {
+                $this->wpvivid_log->WriteLog('insert_with_markers function not exists.','notice');
+            }
+        }
     }
 }

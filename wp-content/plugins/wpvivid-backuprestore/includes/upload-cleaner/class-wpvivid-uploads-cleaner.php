@@ -4,7 +4,7 @@ if (!defined('WPVIVID_PLUGIN_DIR'))
     die;
 }
 
-define('WPVIVID_UPLOADS_ISO_DIR','WPvivid_Uploads'.DIRECTORY_SEPARATOR.'Isolate');
+define('WPVIVID_UPLOADS_ISO_DIR','wpvivid_uploads'.DIRECTORY_SEPARATOR.'Isolate');
 
 if ( ! class_exists( 'WP_List_Table' ) )
 {
@@ -2405,6 +2405,17 @@ class WPvivid_Uploads_Cleaner
                 else
                     $uploads_files[$post]=$media;
             }
+
+            //fix theme WpResidence
+            $media=$uploads_scanner->get_media_from_wpresidence($post);
+
+            if(!empty($media))
+            {
+                if(isset($uploads_files[$post]))
+                    $uploads_files[$post]=array_merge($uploads_files[$post],$media);
+                else
+                    $uploads_files[$post]=$media;
+            }
         }
 
         $start+=$limit;
@@ -2533,6 +2544,17 @@ class WPvivid_Uploads_Cleaner
             }
 
             $media=$uploads_scanner->get_media_from_post_custom_meta($post);
+
+            if(!empty($media))
+            {
+                if(isset($uploads_files[$post]))
+                    $uploads_files[$post]=array_merge($uploads_files[$post],$media);
+                else
+                    $uploads_files[$post]=$media;
+            }
+
+            //fix theme WpResidence
+            $media=$uploads_scanner->get_media_from_wpresidence($post);
 
             if(!empty($media))
             {

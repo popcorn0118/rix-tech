@@ -88,10 +88,10 @@ class Wpvivid_Google_drive extends WPvivid_Remote
                     }
                     try {
                         include_once WPVIVID_PLUGIN_DIR . '/vendor/autoload.php';
-                        $client = new Google_Client();
+                        $client = new WPvivid_Google_Client();
                         $client->setAuthConfig($this->google_drive_secrets);
                         $client->setApprovalPrompt('force');
-                        $client->addScope(Google_Service_Drive::DRIVE_FILE);
+                        $client->addScope(WPvivid_Google_Service_Drive::DRIVE_FILE);
                         $client->setAccessType('offline');
                         $client->setState(admin_url() . 'admin.php?page=WPvivid' . '&action=wpvivid_google_drive_finish_auth&main_tab=storage&sub_tab=googledrive&sub_page=storage_account_google_drive&auth_id='.$auth_id);
                         $auth_url = $client->createAuthUrl();
@@ -224,7 +224,7 @@ class Wpvivid_Google_drive extends WPvivid_Remote
                     <?php _e('Please read <a target="_blank" href="https://wpvivid.com/privacy-policy" style="text-decoration: none;">this privacy policy</a> for use of our Google Drive authorization app (none of your backup data is sent to us).', 'wpvivid-backuprestore'); ?>
                 </div>
                 <div style="color:#8bc34a; padding: 10px 10px 10px 0;">
-                    <strong>Authentication is done, please continue to enter the storge information, then click 'Add Now' button to save it.</strong>
+                    <strong>Authentication is done, please continue to enter the storage information, then click 'Add Now' button to save it.</strong>
                 </div>
                 <div style="padding: 10px 10px 10px 0;">
                     <strong><?php _e('Enter Your Google Drive Information', 'wpvivid-backuprestore'); ?></strong>
@@ -563,7 +563,7 @@ class Wpvivid_Google_drive extends WPvivid_Remote
             return array('result' => WPVIVID_FAILED,'error'=> 'Token refresh failed.');
         }
 
-        $service = new Google_Service_Drive($client);
+        $service = new WPvivid_Google_Service_Drive($client);
         $path=$this->options['path'];
         $wpvivid_plugin->wpvivid_log->WriteLog('Check upload folder '.$path,'notice');
         $folder_id=$this->get_folder($service,$path);
@@ -581,6 +581,8 @@ class Wpvivid_Google_drive extends WPvivid_Remote
             {
                 $file_data['size']=filesize($file);
                 $file_data['uploaded']=0;
+                $file_data['resumeUri']=false;
+                $file_data['progress']=false;
                 $job_data[basename($file)]=$file_data;
             }
             WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_GOOGLEDRIVE,WPVIVID_UPLOAD_UNDO,'Start uploading',$job_data);
@@ -606,7 +608,10 @@ class Wpvivid_Google_drive extends WPvivid_Remote
             if($result['result'] !==WPVIVID_SUCCESS){
                 return $result;
             }
-
+            else
+            {
+                WPvivid_taskmanager::wpvivid_reset_backup_retry_times($task_id);
+            }
             $ref=$this->check_token($client);
             if($ref['result']=!WPVIVID_SUCCESS)
             {
@@ -664,14 +669,14 @@ class Wpvivid_Google_drive extends WPvivid_Remote
         $this -> current_file_size = filesize($file);
         $this -> current_file_name = basename($file);
 
-        $wpvivid_plugin->wpvivid_log->WriteLog('Initiate a resumable upload session.','notice');
-        $fileMetadata = new Google_Service_Drive_DriveFile(array(
+
+        $fileMetadata = new WPvivid_Google_Service_Drive_DriveFile(array(
             'name' => basename($file),
             'parents' => array($folder_id)));
         $chunk_size = 1 * 1024 * 1024;
         $client->setDefer(true);
         $request = $service->files->create($fileMetadata);
-        $media = new Google_Http_MediaFileUpload(
+        $media = new WPvivid_Google_Http_MediaFileUpload(
             $client,
             $request,
             'text/plain',
@@ -680,12 +685,31 @@ class Wpvivid_Google_drive extends WPvivid_Remote
             $chunk_size
         );
         $media->setFileSize(filesize($file));
+
         $status = false;
         $handle = fopen($file, "rb");
 
-        WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_GOOGLEDRIVE,WPVIVID_UPLOAD_UNDO,'Start uploading '.basename($file).'.',$upload_job['job_data']);
+        if(!empty($upload_job['job_data'][basename($file)]['resumeUri']))
+        {
+            $media->resume( $upload_job['job_data'][basename($file)]['resumeUri'] );
 
-        $offset=0;
+            $media->setResumeUri($upload_job['job_data'][basename($file)]['resumeUri'] );
+            $media->setProgress($upload_job['job_data'][basename($file)]['progress'] );
+
+            $wpvivid_plugin->wpvivid_log->WriteLog('Resume uploading '.basename($file).'.','notice');
+            $wpvivid_plugin->wpvivid_log->WriteLog('resumeUri:'.$media->getResumeUri().'.','notice');
+            $wpvivid_plugin->wpvivid_log->WriteLog('progress:'.$media->getProgress().'.','notice');
+
+            $offset = $upload_job['job_data'][basename($file)]['progress'];
+            fseek($handle, $offset);
+            WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_GOOGLEDRIVE,WPVIVID_UPLOAD_UNDO,'Resume uploading '.basename($file).'.',$upload_job['job_data']);
+        }
+        else
+        {
+            $wpvivid_plugin->wpvivid_log->WriteLog('Initiate a resumable upload session.','notice');
+            $offset=0;
+            WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_GOOGLEDRIVE,WPVIVID_UPLOAD_UNDO,'Start uploading '.basename($file).'.',$upload_job['job_data']);
+        }
 
         while (!$status && !feof($handle))
         {
@@ -705,6 +729,13 @@ class Wpvivid_Google_drive extends WPvivid_Remote
                 $this -> last_size = $offset;
                 $this -> last_time = time();
             }
+
+            $upload_job['job_data'][basename($file)]['resumeUri']=$media->getResumeUri();
+            $upload_job['job_data'][basename($file)]['progress']=$media->getProgress();
+
+            //$wpvivid_plugin->wpvivid_log->WriteLog('resumeUri:'.$media->getResumeUri().'.','notice');
+            $wpvivid_plugin->wpvivid_log->WriteLog('progress:'.$media->getProgress().'.','notice');
+            WPvivid_taskmanager::update_backup_sub_task_progress($task_id,'upload',WPVIVID_REMOTE_GOOGLEDRIVE,WPVIVID_UPLOAD_SUCCESS,'Uploading '.basename($file),$upload_job['job_data']);
         }
 
         fclose($handle);
@@ -722,7 +753,7 @@ class Wpvivid_Google_drive extends WPvivid_Remote
         }
     }
 
-    private function get_client()
+    public function get_client()
     {
         $res = $this -> compare_php_version();
         if($res['result'] == WPVIVID_FAILED){
@@ -730,10 +761,10 @@ class Wpvivid_Google_drive extends WPvivid_Remote
         }
 
         include_once WPVIVID_PLUGIN_DIR.'/vendor/autoload.php';
-        $client = new Google_Client();
+        $client = new WPvivid_Google_Client();
         $client->setConfig('access_type','offline');
         $client->setAuthConfig($this->google_drive_secrets);
-        $client->addScope(Google_Service_Drive::DRIVE_FILE);//
+        $client->addScope(WPvivid_Google_Service_Drive::DRIVE_FILE);//
         $client->setAccessToken($this->options['token']);
 
         if ($client->isAccessTokenExpired())
@@ -770,7 +801,7 @@ class Wpvivid_Google_drive extends WPvivid_Remote
         ));
         if(sizeof($response->getFiles())==0)
         {
-            $fileMetadata = new Google_Service_Drive_DriveFile(array(
+            $fileMetadata = new WPvivid_Google_Service_Drive_DriveFile(array(
                 'name' => $path,
                 'mimeType' => 'application/vnd.google-apps.folder'));
             $file = $service->files->create($fileMetadata, array(
@@ -818,7 +849,7 @@ class Wpvivid_Google_drive extends WPvivid_Remote
                 return array('result' => WPVIVID_FAILED,'error'=> 'Token refresh failed.');
             }
 
-            $service = new Google_Service_Drive($client);
+            $service = new WPvivid_Google_Service_Drive($client);
 
             $path=$this->options['path'];
             $wpvivid_plugin->wpvivid_download_log->WriteLog('Create local file.','notice');
@@ -982,7 +1013,7 @@ class Wpvivid_Google_drive extends WPvivid_Remote
             return array('result' => WPVIVID_FAILED,'error'=> 'Token refresh failed.');
         }
 
-        $service = new Google_Service_Drive($client);
+        $service = new WPvivid_Google_Service_Drive($client);
 
         $path=$this->options['path'];
         $folder_id=$this->get_folder($service,$path);
